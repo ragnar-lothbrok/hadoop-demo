@@ -1,0 +1,8 @@
+0	[CountWordPerFile [fileName=delivery, count=1]]
+1	[CountWordPerFile [fileName=delivery, count=2]]
+123	[CountWordPerFile [fileName=delivery, count=1], CountWordPerFile [fileName=customer, count=1]]
+456	[CountWordPerFile [fileName=customer, count=1], CountWordPerFile [fileName=delivery, count=1]]
+888	[CountWordPerFile [fileName=delivery, count=1], CountWordPerFile [fileName=customer, count=1]]
+mani	[CountWordPerFile [fileName=customer, count=1]]
+ravi	[CountWordPerFile [fileName=customer, count=1]]
+vijay	[CountWordPerFile [fileName=customer, count=1]]
