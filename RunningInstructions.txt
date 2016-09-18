@@ -23,3 +23,8 @@ hdfs dfs -ls /
 hdfs dfs -put /home/Desktop/CSV/module3and4datafiles/* /project_inputs/inputs
 
 hadoop jar /home/gitPro/spark-demo/target/spark-demo-0.0.1-SNAPSHOT.jar com.hadoop.skillspeed.mr.CountLines /mr_inputs/inputs/Module_3_Ex1.txt output2
+
+hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SNAPSHOT.jar  com.hadoop.intellipaat.UserSMSDeliveryJob  /user/UserDetails.txt /user/DeliveryDetails.txt /user/DeliveryStatusCodes.txt output21
+
+
+hadoop dfs -rm -r  output*
