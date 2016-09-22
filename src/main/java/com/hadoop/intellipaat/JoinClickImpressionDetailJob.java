@@ -1,9 +1,10 @@
 package com.hadoop.intellipaat;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -15,8 +16,6 @@ import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-
-import com.google.common.collect.Lists;
 
 /**
  * This job will combine click and impression on TrackerId
@@ -68,19 +67,23 @@ public class JoinClickImpressionDetailJob {
 		@Override
 		protected void reduce(Text key, Iterable<Text> values, Reducer<Text, Text, Text, Text>.Context context) {
 			try {
-				if (key.toString().length() != 0) {
-					List<Text> myList = Lists.newArrayList(values);
-					System.out.println("#######"+myList.get(0).toString()+"++++++++++"+myList.get(1).toString());
-					if (myList.size() == 2) {
-						if (myList.get(0).toString().indexOf(IMPRESSION_PREFIX) != -1 && myList.get(1).toString().indexOf(CLICK_PREFIX) != -1) {
-							String line = myList.get(0).toString().split(SEPERATOR)[1] + ",1";
-							context.write(key, new Text(line));
-						} else if (myList.get(1).toString().indexOf(IMPRESSION_PREFIX) != -1
-								&& myList.get(0).toString().indexOf(CLICK_PREFIX) != -1) {
-							String line = myList.get(1).toString().split(SEPERATOR)[1] + ",1";
-							context.write(key, new Text(line));
-						}
+				Boolean iClickPresent = false;
+				Boolean isImpressionPresent = false;
+				String impressionData = "";
+				Iterator<Text> iterator = values.iterator();
+				while (iterator.hasNext()) {
+					String output = iterator.next().toString();
+					if (output.indexOf(IMPRESSION_PREFIX) != -1) {
+						isImpressionPresent = true;
+						impressionData = output;
 					}
+					if (output.indexOf(CLICK_PREFIX) != -1) {
+						iClickPresent = true;
+					}
+				}
+
+				if (iClickPresent && isImpressionPresent) {
+					context.write(key, new Text(impressionData + ",1"));
 				}
 			} catch (Exception exception) {
 				exception.printStackTrace();
@@ -91,24 +94,28 @@ public class JoinClickImpressionDetailJob {
 	public static void main(String[] args) {
 		try {
 			Configuration conf = new Configuration();
-			// conf.set("mapreduce.output.fileoutputformat.compress", "true");
-			// conf.set("mapreduce.output.fileoutputformat.compress.codec",
-			// "org.apache.hadoop.io.compress.GzipCodec");
-			// conf.set("mapreduce.map.output.compress.codec",
-			// "org.apache.hadoop.io.compress.SnappyCodec");
-			// conf.set("mapreduce.output.fileoutputformat.compress.type",
-			// "BLOCK");
+			conf.set("mapreduce.output.fileoutputformat.compress", "true");
+			conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
+			conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+			conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 			Job job = Job.getInstance(conf, "IMPRESSION_CLICK_COMBINE_JOB");
-
 			job.setMapOutputKeyClass(Text.class);
 			job.setMapOutputValueClass(Text.class);
 
 			job.setInputFormatClass(TextInputFormat.class);
 			job.setOutputFormatClass(TextOutputFormat.class);
+
+			job.setReducerClass(ImpressionClickReducer.class);
+
 			FileInputFormat.setInputDirRecursive(job, true);
 
 			// FileInputFormat.addInputPath(job, new Path(args[0]));
 			// job.setMapperClass(ImpressionMapper.class);
+
+			Path p = new Path(args[2]);
+			FileSystem fs = FileSystem.get(conf);
+			fs.exists(p);
+			fs.delete(p, true);
 
 			/**
 			 * Here directory of impressions will be present
@@ -120,9 +127,6 @@ public class JoinClickImpressionDetailJob {
 			MultipleInputs.addInputPath(job, new Path(args[1]), TextInputFormat.class, ClickMapper.class);
 
 			FileOutputFormat.setOutputPath(job, new Path(args[2]));
-
-			job.setReducerClass(ImpressionClickReducer.class);
-
 			job.waitForCompletion(true);
 		} catch (Exception e) {
 			e.printStackTrace();

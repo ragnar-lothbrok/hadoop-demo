@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -93,9 +94,13 @@ public class UserSMSDeliveryJob {
 		protected void reduce(Text key, Iterable<Text> values, Reducer<Text, Text, Text, Text>.Context context)
 				throws IOException, InterruptedException {
 
-			List<Text> myList = Lists.newArrayList(values);
-			String text1[] = myList.get(0).toString().split("~");
-			String text2[] = myList.get(1).toString().split("~");
+			List<String> myList = Lists.newArrayList();
+			for (Text text : values) {
+				myList.add(text.toString());
+			}
+
+			String text1[] = myList.get(0).split("~");
+			String text2[] = myList.get(1).split("~");
 
 			System.out.println(text1[0] + " " + text1[1] + " " + text2[0] + " " + text2[1]);
 
@@ -131,6 +136,12 @@ public class UserSMSDeliveryJob {
 			job.setOutputFormatClass(TextOutputFormat.class);
 
 			if (args.length == 4) {
+
+				Path p = new Path(args[3]);
+				FileSystem fs = FileSystem.get(conf);
+				fs.exists(p);
+				fs.delete(p, true);
+
 				MultipleInputs.addInputPath(job, new Path(args[0]), TextInputFormat.class, UserMapper.class);
 				MultipleInputs.addInputPath(job, new Path(args[1]), TextInputFormat.class, UserSmsCodeMapper.class);
 				job.addCacheFile(new URI(args[2]));
