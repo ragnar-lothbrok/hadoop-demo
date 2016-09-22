@@ -28,3 +28,5 @@ hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SN
 
 
 hadoop dfs -rm -r  output*
+
+hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SNAPSHOT.jar com.hadoop.intellipaat.JoinClickImpressionDetailJob /apps/ReporterBackup/Impression/2016-09-22/ /apps/ReporterBackup/Impression/2016-09-22/ output
