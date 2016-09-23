@@ -10,6 +10,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
@@ -29,6 +30,15 @@ public class JoinClickImpressionDetailJob {
 	public static final String IMPRESSION_PREFIX = "IMPRESSION_PREFIX";
 	public static final String CLICK_PREFIX = "CLICK_PREFIX";
 	public static final String SEPERATOR = "~";
+
+	public static class TrackerPartitioner extends Partitioner<Text, Text> {
+
+		@Override
+		public int getPartition(Text key, Text value, int numPartitions) {
+			return (key.toString().hashCode() & Integer.MAX_VALUE) % numPartitions;
+		}
+
+	}
 
 	private static class ImpressionMapper extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -75,7 +85,7 @@ public class JoinClickImpressionDetailJob {
 					String output = iterator.next().toString();
 					if (output.indexOf(IMPRESSION_PREFIX) != -1) {
 						isImpressionPresent = true;
-						impressionData = output;
+						impressionData = output.replace(IMPRESSION_PREFIX, "");
 					}
 					if (output.indexOf(CLICK_PREFIX) != -1) {
 						iClickPresent = true;
@@ -84,6 +94,8 @@ public class JoinClickImpressionDetailJob {
 
 				if (iClickPresent && isImpressionPresent) {
 					context.write(key, new Text(impressionData + ",1"));
+				}else if(isImpressionPresent){
+					context.write(key, new Text(impressionData + ",0"));
 				}
 			} catch (Exception exception) {
 				exception.printStackTrace();
@@ -93,11 +105,14 @@ public class JoinClickImpressionDetailJob {
 
 	public static void main(String[] args) {
 		try {
+
+			long startTime = System.currentTimeMillis();
+
 			Configuration conf = new Configuration();
-			conf.set("mapreduce.output.fileoutputformat.compress", "true");
-			conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
-			conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
-			conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
+//			conf.set("mapreduce.output.fileoutputformat.compress", "true");
+//			conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
+//			conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+//			conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 			Job job = Job.getInstance(conf, "IMPRESSION_CLICK_COMBINE_JOB");
 			job.setMapOutputKeyClass(Text.class);
 			job.setMapOutputValueClass(Text.class);
@@ -127,7 +142,14 @@ public class JoinClickImpressionDetailJob {
 			MultipleInputs.addInputPath(job, new Path(args[1]), TextInputFormat.class, ClickMapper.class);
 
 			FileOutputFormat.setOutputPath(job, new Path(args[2]));
+
+			job.setNumReduceTasks(10);
+			
+			job.setPartitionerClass(TrackerPartitioner.class);
+
 			job.waitForCompletion(true);
+			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
