@@ -25,17 +25,19 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
  *
  */
 
-
 /**
  * 
  * 
- * For merging : hadoop fs -cat /user/output/* > /tmp/final.txt
- * Number of files created will be equal to number of reducers.
+ * For merging : hadoop fs -cat /user/output/* > /tmp/final.txt Number of files
+ * created will be equal to number of reducers.
+ * 
  * @author raghunandangupta
+ * 
+ * export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$HADOOP_HOME/share/hadoop/tools/lib/*
  *
  */
 
-public class JoinClickImpressionDetailJob {
+public class JoinClickImpressionS3DetailJob {
 
 	public static final String IMPRESSION_PREFIX = "IMPRESSION_PREFIX";
 	public static final String CLICK_PREFIX = "CLICK_PREFIX";
@@ -104,7 +106,7 @@ public class JoinClickImpressionDetailJob {
 
 				if (iClickPresent && isImpressionPresent) {
 					context.write(key, new Text(impressionData + ",1"));
-				}else if(isImpressionPresent){
+				} else if (isImpressionPresent) {
 					context.write(key, new Text(impressionData + ",0"));
 				}
 			} catch (Exception exception) {
@@ -123,7 +125,14 @@ public class JoinClickImpressionDetailJob {
 			conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
 			conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 			conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
-			Job job = Job.getInstance(conf, "IMPRESSION_CLICK_COMBINE_JOB");
+			Job job = Job.getInstance(conf, "IMPRESSION_CLICK_COMBINE_S3_JOB");
+
+			/**
+			 * S3 configurations
+			 */
+
+			job.setJobName("S3MapReduce");
+
 			job.setMapOutputKeyClass(Text.class);
 			job.setMapOutputValueClass(Text.class);
 
@@ -154,12 +163,12 @@ public class JoinClickImpressionDetailJob {
 			FileOutputFormat.setOutputPath(job, new Path(args[2]));
 
 			job.setNumReduceTasks(10);
-			
+
 			job.setPartitionerClass(TrackerPartitioner.class);
 
 			job.waitForCompletion(true);
 			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -15,15 +15,18 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class FilterLines {
+public class CountLinesJob {
 
 	private static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 		@Override
 		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, IntWritable>.Context context)
 				throws IOException, InterruptedException {
 			String line = value.toString();
-			if(line.trim().length() > 0){
-				context.write(new Text("line_count"), new IntWritable(1));
+			if (line.trim().length() > 0) {
+				String words[] = line.split("\t");
+				if (!(Double.parseDouble(words[2]) > 20)) {
+					context.write(new Text(line), new IntWritable(1));
+				}
 			}
 		}
 	}
@@ -45,7 +48,7 @@ public class FilterLines {
 
 		Configuration conf = new Configuration();
 
-		Job job = Job.getInstance(conf, "LINEFILTER");
+		Job job = Job.getInstance(conf, "LINECOUNT");
 
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(IntWritable.class);
