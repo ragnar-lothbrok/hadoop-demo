@@ -29,6 +29,11 @@ hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SN
 
 hadoop dfs -rm -r  output*
 
-hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SNAPSHOT.jar com.hadoop.intellipaat.JoinClickImpressionDetailJob /apps/ReporterBackup/Impression/2016-09-22/ /apps/ReporterBackup/Impression/2016-09-22/ output
+hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SNAPSHOT.jar com.hadoop.intellipaat.JoinClickImpressionDetailJob /apps/ReporterBackup/Impression/ /apps/ReporterBackup/Click/ output
 
 hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SNAPSHOT.jar com.hadoop.intellipaat.customInput.XMLMRJob /user/text.txt /user/output11
+
+
+
+hadoop dfs -mkdir -p /apps/ReporterBackup/Click
+hadoop dfs -rm -r /apps/ReporterBackup/Impression

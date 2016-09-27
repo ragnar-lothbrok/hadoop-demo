@@ -61,21 +61,18 @@ public class JoinClickImpressionDetailJob {
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
 			if (key.toString().equals("1")) {
-				return numPartitions - 1;
+				return 0;
 			} else {
-				return (key.toString().hashCode() & Integer.MAX_VALUE) % (numPartitions - 1);
+				return 1;
 			}
 		}
 	}
 
-	/**
-	 * accountId,brand,campaignId,inverseTimestamp,supc,category,pagetype,site,
-	 * sellerCode,amount,publisherRevenue,pog,device_id,email,user_id,adType,url
-	 * ,cookieId,trackerId,creativeId,timestamp,relevancy_score,
-	 * relevancy_category,ref_tag,offer_price,rating,discount,sdplus,
-	 * no_of_rating,created_time,normalized_rating,os,browser,city,state,country
-	 *
-	 */
+	private static String[] HEADERS = new String[] { "accountId", "brand", "campaignId", "inverseTimestamp", "supc", "category", "pagetype", "site",
+			"sellerCode", "amount", "publisherRevenue", "pog", "device_id", "email", "user_id", "adType", "url", "cookieId", "trackerId",
+			"creativeId", "timestamp", "relevancy_score", "relevancy_category", "ref_tag", "offer_price", "rating", "discount", "sdplus",
+			"no_of_rating", "created_time", "normalized_rating", "os", "browser", "city", "state", "country" };
+
 	private static class ImpressionMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		@Override
@@ -83,8 +80,8 @@ public class JoinClickImpressionDetailJob {
 				throws IOException, InterruptedException {
 
 			// Excluding header
-			if (!(value.toString().indexOf("accountId") != -1)) {
-				String words[] = value.toString().split(",");
+			if (!(value.toString().indexOf(HEADERS[0]) != -1)) {
+				String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 				if (words.length >= 32) {
 					context.write(new Text(words[18].trim()), new Text(IMPRESSION_PREFIX + value.toString()));
 				}
@@ -99,7 +96,7 @@ public class JoinClickImpressionDetailJob {
 		@Override
 		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
 				throws IOException, InterruptedException {
-			String words[] = value.toString().split(",");
+			String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 			if (words.length > 18) {
 				context.write(new Text(words[18].trim()), new Text(CLICK_PREFIX + value.toString()));
 			} else {
@@ -131,12 +128,12 @@ public class JoinClickImpressionDetailJob {
 					}
 				}
 
-				String record = convertToLibsvm(impressionData.split(","));
+				String record = convertToLibsvm(impressionData.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 				if (record.trim().length() > 0) {
 					if (iClickPresent && isImpressionPresent) {
-						context.write(new Text("1"), new Text(convertToLibsvm(impressionData.split(","))));
+						context.write(new Text("1"), new Text(record));
 					} else if (isImpressionPresent) {
-						context.write(new Text("0"), new Text(convertToLibsvm(impressionData.split(","))));
+						context.write(new Text("0"), new Text(record));
 					}
 				}
 			} catch (Exception exception) {
@@ -145,13 +142,13 @@ public class JoinClickImpressionDetailJob {
 		}
 	}
 
-	private static class ImpressionClickMapper extends Mapper<Text, Text, Text, Text> {
+	private static class ImpressionClickMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		@Override
-		protected void map(Text key, Text value, Mapper<Text, Text, Text, Text>.Context context) throws IOException, InterruptedException {
-			if (key.toString().equals("1") || key.toString().equals("0")) {
-				context.write(key, value);
-			}
+		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
+				throws IOException, InterruptedException {
+			String splits[] = value.toString().split("\t");
+			context.write(new Text(splits[0].trim()), new Text(splits[1].trim()));
 		}
 	}
 
@@ -309,59 +306,24 @@ public class JoinClickImpressionDetailJob {
 	}
 
 	public static void main(String[] args) {
+		runMRJobs(args);
+	}
+
+	private static int runMRJobs(String[] args) {
+		int result = -1;
 		Configuration conf = new Configuration();
 		conf.set("mapreduce.output.fileoutputformat.compress", "true");
 		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 
-		ControlledJob controlledJob1 = null;
+		ControlledJob mrJob1 = null;
 		try {
-			long startTime = System.currentTimeMillis();
-			controlledJob1 = new ControlledJob(conf);
-			controlledJob1.setJobName("IMPRESSION_CLICK_COMBINE_JOB");
-
-			Job job = controlledJob1.getJob();
-			job.setMapOutputKeyClass(Text.class);
-			job.setMapOutputValueClass(Text.class);
-			job.setJarByClass(JoinClickImpressionDetailJob.class);
-
-			job.setInputFormatClass(TextInputFormat.class);
-			job.setOutputFormatClass(TextOutputFormat.class);
-
-			job.setReducerClass(ImpressionClickReducer.class);
-
-			FileInputFormat.setInputDirRecursive(job, true);
-
-			// FileInputFormat.addInputPath(job, new Path(args[0]));
-			// job.setMapperClass(ImpressionMapper.class);
-
-			Path p = new Path(args[2]);
-			FileSystem fs = FileSystem.get(conf);
-			fs.exists(p);
-			fs.delete(p, true);
-
-			/**
-			 * Here directory of impressions will be present
-			 */
-			MultipleInputs.addInputPath(job, new Path(args[0]), TextInputFormat.class, ImpressionMapper.class);
-			/**
-			 * Here directory of clicks will be present
-			 */
-			MultipleInputs.addInputPath(job, new Path(args[1]), TextInputFormat.class, ClickMapper.class);
-
-			FileOutputFormat.setOutputPath(job, new Path(args[2]));
-
-			job.setNumReduceTasks(10);
-
-			job.setPartitionerClass(TrackerPartitioner.class);
-
-			boolean success = job.waitForCompletion(true);
-			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000 + "success: " + success);
-			while (!job.isComplete()) {
-				System.out.println("Job is still executing");
-			}
-
+			deleteDirectory(args[2], conf);
+			mrJob1 = new ControlledJob(conf);
+			mrJob1.setJobName("IMPRESSION_CLICK_COMBINE_JOB");
+			Job job = mrJob1.getJob();
+			result += firstMapReduceJob(args, job);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -370,57 +332,85 @@ public class JoinClickImpressionDetailJob {
 
 		System.out.println("Second Job Started=============");
 
-		ControlledJob controlledJob2 = null;
+		ControlledJob mrJob2 = null;
 		try {
-			long startTime = System.currentTimeMillis();
-			controlledJob2 = new ControlledJob(conf);
-			controlledJob2.setJobName("IMPRESSION_CLICK_COMBINE_JOB1");
-
-			Job job2 = controlledJob2.getJob();
-			job2.setMapOutputKeyClass(Text.class);
-			job2.setMapOutputValueClass(Text.class);
-			job2.setJarByClass(JoinClickImpressionDetailJob.class);
-
-			job2.setInputFormatClass(TextInputFormat.class);
-			job2.setOutputFormatClass(TextOutputFormat.class);
-
-			job2.setReducerClass(ImpressionAndClickReducer.class);
-
-			FileInputFormat.setInputDirRecursive(job2, true);
-
-			// FileInputFormat.addInputPath(job, new Path(args[0]));
-			// job.setMapperClass(ImpressionMapper.class);
-
-			Path p = new Path(args[2]);
-			FileSystem fs = FileSystem.get(conf);
-			fs.exists(p);
-			fs.delete(p, true);
-
-			/**
-			 * Here directory of impressions will be present
-			 */
-			MultipleInputs.addInputPath(job2, new Path(args[2]), TextInputFormat.class, ImpressionClickMapper.class);
-			/**
-			 * Here directory of clicks will be present
-			 */
-
-			FileOutputFormat.setOutputPath(job2, new Path(args[3]));
-
-			job2.setNumReduceTasks(10);
-
-			job2.setPartitionerClass(ClickNonClickPartitioner.class);
-
-			job2.waitForCompletion(true);
-			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
+			mrJob2 = new ControlledJob(conf);
+			deleteDirectory(args[3], conf);
+			mrJob2.addDependingJob(mrJob1);
+			mrJob2.setJobName("IMPRESSION_CLICK_COMBINE_JOB1");
+			Job job2 = mrJob2.getJob();
+			result +=  secondMapReduceJob(args, job2);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		System.out.println("Second Job Finished=============");
 
 		JobControl jobControl = new JobControl("Click-Impression-aggregator");
-		jobControl.addJob(controlledJob1);
-		jobControl.addJob(controlledJob2);
-
+		jobControl.addJob(mrJob1);
+		jobControl.addJob(mrJob2);
 		jobControl.run();
+		return result;
+	}
+
+	private static int secondMapReduceJob(String[] args, Job job2) throws IOException, InterruptedException, ClassNotFoundException {
+		long startTime = System.currentTimeMillis();
+		
+		job2.setMapOutputKeyClass(Text.class);
+		job2.setMapOutputValueClass(Text.class);
+		job2.setJarByClass(JoinClickImpressionDetailJob.class);
+
+		job2.setInputFormatClass(TextInputFormat.class);
+		job2.setOutputFormatClass(TextOutputFormat.class);
+
+		job2.setReducerClass(ImpressionAndClickReducer.class);
+
+		FileInputFormat.setInputDirRecursive(job2, true);
+		FileInputFormat.addInputPath(job2, new Path(args[2]));
+		job2.setMapperClass(ImpressionClickMapper.class);
+
+		FileOutputFormat.setOutputPath(job2, new Path(args[3]));
+		job2.setNumReduceTasks(2);
+		job2.setPartitionerClass(ClickNonClickPartitioner.class);
+		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
+		return job2.waitForCompletion(true) ? 1 : 0;
+	}
+
+	private static int firstMapReduceJob(String[] args, Job job) throws IOException, InterruptedException, ClassNotFoundException {
+
+		long startTime = System.currentTimeMillis();
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Text.class);
+		job.setJarByClass(JoinClickImpressionDetailJob.class);
+
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		job.setReducerClass(ImpressionClickReducer.class);
+
+		FileInputFormat.setInputDirRecursive(job, true);
+		/**
+		 * Here directory of impressions will be present
+		 */
+		MultipleInputs.addInputPath(job, new Path(args[0]), TextInputFormat.class, ImpressionMapper.class);
+		/**
+		 * Here directory of clicks will be present
+		 */
+		MultipleInputs.addInputPath(job, new Path(args[1]), TextInputFormat.class, ClickMapper.class);
+
+		FileOutputFormat.setOutputPath(job, new Path(args[2]));
+
+		job.setNumReduceTasks(10);
+
+		job.setPartitionerClass(TrackerPartitioner.class);
+
+		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
+		return job.waitForCompletion(true) ? 1 : 0;
+	}
+
+	private static void deleteDirectory(String args, Configuration conf) throws IOException {
+		Path p = new Path(args);
+		FileSystem fs = FileSystem.get(conf);
+		fs.exists(p);
+		fs.delete(p, true);
 	}
 }
