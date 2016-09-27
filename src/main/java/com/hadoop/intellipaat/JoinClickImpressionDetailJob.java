@@ -1,6 +1,8 @@
 package com.hadoop.intellipaat;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
 import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;
@@ -15,8 +17,12 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.jobcontrol.ControlledJob;
+import org.apache.hadoop.mapreduce.lib.jobcontrol.JobControl;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import com.google.common.hash.Hashing;
 
 /**
  * This job will combine click and impression on TrackerId
@@ -25,21 +31,21 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
  *
  */
 
-
 /**
  * 
  * 
- * For merging : hadoop fs -cat /user/output/* > /tmp/final.txt
- * Number of files created will be equal to number of reducers.
+ * For merging : hadoop fs -cat /user/output/* > /tmp/final.txt Number of files
+ * created will be equal to number of reducers.
+ * 
  * @author raghunandangupta
  *
  */
 
 public class JoinClickImpressionDetailJob {
 
-	public static final String IMPRESSION_PREFIX = "IMPRESSION_PREFIX";
-	public static final String CLICK_PREFIX = "CLICK_PREFIX";
-	public static final String SEPERATOR = "~";
+	public static final String IMPRESSION_PREFIX = "IMPRESSION_PREFIX~";
+	public static final String CLICK_PREFIX = "CLICK_PREFIX~";
+	private static final String SPACE = " ";
 
 	public static class TrackerPartitioner extends Partitioner<Text, Text> {
 
@@ -50,18 +56,37 @@ public class JoinClickImpressionDetailJob {
 
 	}
 
+	public static class ClickNonClickPartitioner extends Partitioner<Text, Text> {
+
+		@Override
+		public int getPartition(Text key, Text value, int numPartitions) {
+			if (key.toString().equals("1")) {
+				return numPartitions - 1;
+			} else {
+				return (key.toString().hashCode() & Integer.MAX_VALUE) % (numPartitions - 1);
+			}
+		}
+	}
+
+	/**
+	 * accountId,brand,campaignId,inverseTimestamp,supc,category,pagetype,site,
+	 * sellerCode,amount,publisherRevenue,pog,device_id,email,user_id,adType,url
+	 * ,cookieId,trackerId,creativeId,timestamp,relevancy_score,
+	 * relevancy_category,ref_tag,offer_price,rating,discount,sdplus,
+	 * no_of_rating,created_time,normalized_rating,os,browser,city,state,country
+	 *
+	 */
 	private static class ImpressionMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		@Override
 		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
 				throws IOException, InterruptedException {
-			/**
-			 * Excluding header
-			 */
+
+			// Excluding header
 			if (!(value.toString().indexOf("accountId") != -1)) {
 				String words[] = value.toString().split(",");
-				if (words.length > 18) {
-					context.write(new Text(words[18].trim()), new Text(IMPRESSION_PREFIX + SEPERATOR + value.toString()));
+				if (words.length >= 32) {
+					context.write(new Text(words[18].trim()), new Text(IMPRESSION_PREFIX + value.toString()));
 				}
 			} else {
 				context.write(new Text(""), value);
@@ -76,13 +101,17 @@ public class JoinClickImpressionDetailJob {
 				throws IOException, InterruptedException {
 			String words[] = value.toString().split(",");
 			if (words.length > 18) {
-				context.write(new Text(words[18].trim()), new Text(CLICK_PREFIX + SEPERATOR + value.toString()));
+				context.write(new Text(words[18].trim()), new Text(CLICK_PREFIX + value.toString()));
 			} else {
 				context.write(new Text(""), new Text("1"));
 			}
 		}
 	}
 
+	/**
+	 * Here file will be committed in libsvm format.
+	 *
+	 */
 	private static class ImpressionClickReducer extends Reducer<Text, Text, Text, Text> {
 		@Override
 		protected void reduce(Text key, Iterable<Text> values, Reducer<Text, Text, Text, Text>.Context context) {
@@ -95,17 +124,20 @@ public class JoinClickImpressionDetailJob {
 					String output = iterator.next().toString();
 					if (output.indexOf(IMPRESSION_PREFIX) != -1) {
 						isImpressionPresent = true;
-						impressionData = output.replace(IMPRESSION_PREFIX, "");
+						impressionData = output.replace(IMPRESSION_PREFIX, "").toLowerCase();
 					}
 					if (output.indexOf(CLICK_PREFIX) != -1) {
 						iClickPresent = true;
 					}
 				}
 
-				if (iClickPresent && isImpressionPresent) {
-					context.write(key, new Text(impressionData + ",1"));
-				}else if(isImpressionPresent){
-					context.write(key, new Text(impressionData + ",0"));
+				String record = convertToLibsvm(impressionData.split(","));
+				if (record.trim().length() > 0) {
+					if (iClickPresent && isImpressionPresent) {
+						context.write(new Text("1"), new Text(convertToLibsvm(impressionData.split(","))));
+					} else if (isImpressionPresent) {
+						context.write(new Text("0"), new Text(convertToLibsvm(impressionData.split(","))));
+					}
 				}
 			} catch (Exception exception) {
 				exception.printStackTrace();
@@ -113,19 +145,186 @@ public class JoinClickImpressionDetailJob {
 		}
 	}
 
-	public static void main(String[] args) {
+	private static class ImpressionClickMapper extends Mapper<Text, Text, Text, Text> {
+
+		@Override
+		protected void map(Text key, Text value, Mapper<Text, Text, Text, Text>.Context context) throws IOException, InterruptedException {
+			if (key.toString().equals("1") || key.toString().equals("0")) {
+				context.write(key, value);
+			}
+		}
+	}
+
+	private static class ImpressionAndClickReducer extends Reducer<Text, Text, Text, Text> {
+		@Override
+		protected void reduce(Text key, Iterable<Text> values, Reducer<Text, Text, Text, Text>.Context context)
+				throws IOException, InterruptedException {
+			for (Text text : values) {
+				context.write(key, text);
+			}
+		}
+	}
+
+	private static String convertToLibsvm(String[] words) {
+		StringBuilder sb = new StringBuilder();
 		try {
+			// Return if ad type is not product and price is zero
+			if (!(words[24].trim().length() > 0 && Float.parseFloat(words[24].trim()) > 0) || !("product".equalsIgnoreCase(words[15].trim()))) {
+				return "";
+			}
 
+			sb.append("1:" + ((Float) Float.parseFloat(words[0])).intValue()).append(SPACE) // Account
+																							// Id
+					.append("2:" + hashCode(words[1])).append(SPACE) // Brand Id
+					.append("3:" + hashCode(words[5])).append(SPACE); // category
+
+			// Page Type
+			byte[] pageTypes = convertPageTypeToBytes(words[6].trim());
+			if (pageTypes != null) {
+				sb.append("4:" + pageTypes[0]).append(SPACE).append("5:" + pageTypes[1]).append(SPACE).append("6:" + pageTypes[2]).append(SPACE);
+			}
+
+			// Site Ids
+			byte[] siteTypes = convertSiteIdToBytes(words[7].trim());
+			if (siteTypes != null) {
+				sb.append("7:" + pageTypes[0]).append(SPACE).append("8:" + pageTypes[1]).append(SPACE).append("9:" + pageTypes[2]).append(SPACE);
+			}
+
+			sb.append("10:" + hashCode(words[8].trim())).append(SPACE) // Seller
+																		// Code
+					.append("11:" + hashCode(words[11].trim())).append(SPACE) // PogId
+					.append("12:" + hashCode(words[12].trim())).append(SPACE) // device
+																				// Id
+					.append("13:" + hashCode(words[13].trim())).append(SPACE); // Email_id
+
+			if (words[20].trim().length() > 0) {
+				int[] timeStamp = convertToDay_Month_Year(words[20].trim());
+				if (timeStamp != null) {
+					sb.append("14:" + timeStamp[0]).append(SPACE).append("15:" + timeStamp[1]).append(SPACE);
+				}
+			}
+
+			if (words[21].trim().length() > 0) {
+				sb.append("16:" + ((Float) Float.parseFloat(words[21].trim())).intValue()).append(SPACE); // Relevant
+																											// score
+			}
+
+			if (words[22].trim().length() > 0) {
+				sb.append("17:" + hashCode(words[22])).append(SPACE); // Relevant
+																		// category
+			}
+
+			sb.append("18:" + ((Float) Float.parseFloat(words[24].trim())).intValue()).append(SPACE); // price
+
+			if (words[25].trim().length() > 0) {
+				sb.append("19:" + ((Float) Float.parseFloat(words[25].trim())).intValue()).append(SPACE); // rating
+			}
+
+			if (words[26].trim().length() > 0) {
+				sb.append("20:" + ((Float) Float.parseFloat(words[26].trim())).intValue()).append(SPACE); // discount
+			}
+
+			// Sd plus
+			if (words[27].trim().length() != 0) {
+				boolean sdPlus = Boolean.parseBoolean(words[27].trim());
+				if (sdPlus) {
+					sb.append("21:" + "1").append(SPACE).append("22:" + "0").append(SPACE);
+				} else {
+					sb.append("21:" + "0").append(SPACE).append("22:" + "1").append(SPACE);
+				}
+			}
+
+			// OS
+			if (words[31].trim().length() > 0) {
+				sb.append("23:" + hashCode(words[31].trim())).append(SPACE);
+			}
+
+			// Browser
+			if (words[32].trim().length() > 0) {
+				sb.append("24:" + hashCode(words[32].trim())).append(SPACE);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
+		return sb.toString();
+	}
+
+	private static final byte[] UNKNOWN = { 0, 0, 0 };
+	private static final byte[] SLP = { 1, 0, 0 };
+	private static final byte[] CLP = { 0, 1, 0 };
+	private static final byte[] PDP = { 0, 0, 1 };
+
+	private static final byte[] WEB = { 1, 0, 0 };
+	private static final byte[] WAP = { 0, 1, 0 };
+	private static final byte[] APP = { 0, 0, 1 };
+	private static final byte[] GENERIC = { 0, 0, 0 };
+
+	private static int[] convertToDay_Month_Year(String timeStamp) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeInMillis(Long.parseLong(timeStamp));
+		return new int[] { cal.get(Calendar.HOUR), cal.get(Calendar.DAY_OF_WEEK) };
+	}
+
+	private static byte[] convertPageTypeToBytes(String siteId) {
+		byte[] value = null;
+		switch (siteId) {
+		case "slp":
+			value = SLP;
+			break;
+		case "clp":
+			value = CLP;
+			break;
+		case "pdp":
+			value = PDP;
+			break;
+		default:
+			value = UNKNOWN;
+		}
+		return value;
+	}
+
+	private static byte[] convertSiteIdToBytes(String siteId) {
+		byte[] value = null;
+		switch (siteId) {
+		case "101":
+			value = WEB;
+			break;
+		case "102":
+			value = WAP;
+			break;
+		case "103":
+		case "104":
+		case "105":
+			value = APP;
+			break;
+		default:
+			value = GENERIC;
+		}
+		return value;
+	}
+
+	private static String hashCode(String value) {
+		return Math.abs(Hashing.murmur3_32().hashString(value, StandardCharsets.UTF_8).hashCode()) + "";
+	}
+
+	public static void main(String[] args) {
+		Configuration conf = new Configuration();
+		conf.set("mapreduce.output.fileoutputformat.compress", "true");
+		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
+		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
+
+		ControlledJob controlledJob1 = null;
+		try {
 			long startTime = System.currentTimeMillis();
+			controlledJob1 = new ControlledJob(conf);
+			controlledJob1.setJobName("IMPRESSION_CLICK_COMBINE_JOB");
 
-			Configuration conf = new Configuration();
-			conf.set("mapreduce.output.fileoutputformat.compress", "true");
-			conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
-			conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
-			conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
-			Job job = Job.getInstance(conf, "IMPRESSION_CLICK_COMBINE_JOB");
+			Job job = controlledJob1.getJob();
 			job.setMapOutputKeyClass(Text.class);
 			job.setMapOutputValueClass(Text.class);
+			job.setJarByClass(JoinClickImpressionDetailJob.class);
 
 			job.setInputFormatClass(TextInputFormat.class);
 			job.setOutputFormatClass(TextOutputFormat.class);
@@ -154,15 +353,74 @@ public class JoinClickImpressionDetailJob {
 			FileOutputFormat.setOutputPath(job, new Path(args[2]));
 
 			job.setNumReduceTasks(10);
-			
+
 			job.setPartitionerClass(TrackerPartitioner.class);
 
-			job.waitForCompletion(true);
-			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
-			
+			boolean success = job.waitForCompletion(true);
+			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000 + "success: " + success);
+			while (!job.isComplete()) {
+				System.out.println("Job is still executing");
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
 
+		System.out.println("First Job Finished=============");
+
+		System.out.println("Second Job Started=============");
+
+		ControlledJob controlledJob2 = null;
+		try {
+			long startTime = System.currentTimeMillis();
+			controlledJob2 = new ControlledJob(conf);
+			controlledJob2.setJobName("IMPRESSION_CLICK_COMBINE_JOB1");
+
+			Job job2 = controlledJob2.getJob();
+			job2.setMapOutputKeyClass(Text.class);
+			job2.setMapOutputValueClass(Text.class);
+			job2.setJarByClass(JoinClickImpressionDetailJob.class);
+
+			job2.setInputFormatClass(TextInputFormat.class);
+			job2.setOutputFormatClass(TextOutputFormat.class);
+
+			job2.setReducerClass(ImpressionAndClickReducer.class);
+
+			FileInputFormat.setInputDirRecursive(job2, true);
+
+			// FileInputFormat.addInputPath(job, new Path(args[0]));
+			// job.setMapperClass(ImpressionMapper.class);
+
+			Path p = new Path(args[2]);
+			FileSystem fs = FileSystem.get(conf);
+			fs.exists(p);
+			fs.delete(p, true);
+
+			/**
+			 * Here directory of impressions will be present
+			 */
+			MultipleInputs.addInputPath(job2, new Path(args[2]), TextInputFormat.class, ImpressionClickMapper.class);
+			/**
+			 * Here directory of clicks will be present
+			 */
+
+			FileOutputFormat.setOutputPath(job2, new Path(args[3]));
+
+			job2.setNumReduceTasks(10);
+
+			job2.setPartitionerClass(ClickNonClickPartitioner.class);
+
+			job2.waitForCompletion(true);
+			System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println("Second Job Finished=============");
+
+		JobControl jobControl = new JobControl("Click-Impression-aggregator");
+		jobControl.addJob(controlledJob1);
+		jobControl.addJob(controlledJob2);
+
+		jobControl.run();
+	}
 }
