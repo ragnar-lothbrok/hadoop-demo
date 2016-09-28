@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -21,31 +23,29 @@ import org.apache.hadoop.mapreduce.lib.jobcontrol.ControlledJob;
 import org.apache.hadoop.mapreduce.lib.jobcontrol.JobControl;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
 import com.google.common.hash.Hashing;
 
 /**
  * This job will combine click and impression on TrackerId
  * 
- * @author raghunandangupta
- *
- */
-
-/**
- * 
- * 
  * For merging : hadoop fs -cat /user/output/* > /tmp/final.txt Number of files
  * created will be equal to number of reducers.
  * 
+ * dfs.permissions == false
+ * 
  * @author raghunandangupta
  *
  */
 
-public class JoinClickImpressionDetailJob {
+public class JoinClickImpressionDetailJob extends Configured implements Tool {
 
 	public static final String IMPRESSION_PREFIX = "IMPRESSION_PREFIX~";
 	public static final String CLICK_PREFIX = "CLICK_PREFIX~";
 	private static final String SPACE = " ";
+	private static final Random random = new Random();
 
 	public static class TrackerPartitioner extends Partitioner<Text, Text> {
 
@@ -61,9 +61,9 @@ public class JoinClickImpressionDetailJob {
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
 			if (key.toString().equals("1")) {
-				return 0;
+				return numPartitions - 1;
 			} else {
-				return 1;
+				return random.nextInt(7);
 			}
 		}
 	}
@@ -305,8 +305,9 @@ public class JoinClickImpressionDetailJob {
 		return Math.abs(Hashing.murmur3_32().hashString(value, StandardCharsets.UTF_8).hashCode()) + "";
 	}
 
-	public static void main(String[] args) {
-		runMRJobs(args);
+	public static void main(String[] args) throws Exception {
+		ToolRunner.run(new Configuration(), new JoinClickImpressionDetailJob(), args);
+		System.exit(1);
 	}
 
 	private static int runMRJobs(String[] args) {
@@ -318,12 +319,13 @@ public class JoinClickImpressionDetailJob {
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 
 		ControlledJob mrJob1 = null;
+		Job firstJob = null;
 		try {
 			deleteDirectory(args[2], conf);
 			mrJob1 = new ControlledJob(conf);
 			mrJob1.setJobName("IMPRESSION_CLICK_COMBINE_JOB");
-			Job job = mrJob1.getJob();
-			result += firstMapReduceJob(args, job);
+			firstJob = mrJob1.getJob();
+			result += firstMapReduceJob(args, firstJob);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -339,7 +341,7 @@ public class JoinClickImpressionDetailJob {
 			mrJob2.addDependingJob(mrJob1);
 			mrJob2.setJobName("IMPRESSION_CLICK_COMBINE_JOB1");
 			Job job2 = mrJob2.getJob();
-			result +=  secondMapReduceJob(args, job2);
+			result += secondMapReduceJob(args, job2);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -354,7 +356,7 @@ public class JoinClickImpressionDetailJob {
 
 	private static int secondMapReduceJob(String[] args, Job job2) throws IOException, InterruptedException, ClassNotFoundException {
 		long startTime = System.currentTimeMillis();
-		
+
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 		job2.setJarByClass(JoinClickImpressionDetailJob.class);
@@ -369,7 +371,7 @@ public class JoinClickImpressionDetailJob {
 		job2.setMapperClass(ImpressionClickMapper.class);
 
 		FileOutputFormat.setOutputPath(job2, new Path(args[3]));
-		job2.setNumReduceTasks(2);
+		job2.setNumReduceTasks(8);
 		job2.setPartitionerClass(ClickNonClickPartitioner.class);
 		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
 		return job2.waitForCompletion(true) ? 1 : 0;
@@ -412,5 +414,10 @@ public class JoinClickImpressionDetailJob {
 		FileSystem fs = FileSystem.get(conf);
 		fs.exists(p);
 		fs.delete(p, true);
+	}
+
+	@Override
+	public int run(String[] args) throws Exception {
+		return runMRJobs(args);
 	}
 }
