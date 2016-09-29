@@ -374,7 +374,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		job2.setNumReduceTasks(8);
 		job2.setPartitionerClass(ClickNonClickPartitioner.class);
 		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
-		return job2.waitForCompletion(true) ? 1 : 0;
+		return job2.waitForCompletion(true) ? 0 : 1;
 	}
 
 	private static int firstMapReduceJob(String[] args, Job job) throws IOException, InterruptedException, ClassNotFoundException {
@@ -406,7 +406,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		job.setPartitionerClass(TrackerPartitioner.class);
 
 		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
-		return job.waitForCompletion(true) ? 1 : 0;
+		return job.waitForCompletion(true) ? 0 : 1;
 	}
 
 	private static void deleteDirectory(String args, Configuration conf) throws IOException {
