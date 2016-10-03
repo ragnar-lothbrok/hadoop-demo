@@ -352,7 +352,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("dfs.namenode.handler.count", "32");
 		conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
-		conf.set("mapred.child.java.opts", "-Xmx1G -XX:+UseConcMarkSweepGC");
+		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.tasktracker.map.tasks.maximum", "30");
 		conf.set("mapreduce.tasktracker.reduce.tasks.maximum", "30");
 		
