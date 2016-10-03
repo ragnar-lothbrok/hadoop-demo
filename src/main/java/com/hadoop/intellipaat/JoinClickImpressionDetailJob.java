@@ -89,6 +89,23 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 				context.write(new Text(""), value);
 			}
 		}
+
+		@Override
+		public void run(Mapper<LongWritable, Text, Text, Text>.Context context) throws IOException, InterruptedException {
+			setup(context);
+			while (true) {
+				try {
+					if (!context.nextKeyValue()) {
+						break;
+					} else {
+						map(context.getCurrentKey(), context.getCurrentValue(), context);
+					}
+				} catch (Exception sre) {
+					System.out.println("Mapper : "+sre);
+				}
+			}
+			cleanup(context);
+		}
 	}
 
 	private static class ClickMapper extends Mapper<LongWritable, Text, Text, Text> {
@@ -321,6 +338,8 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("mapreduce.reduce.java.opts", "-Xmx10024m");
 		conf.set("mapreduce.map.java.opts", "-Xmx10024m");
 		conf.set("mapreduce.map.cpu.vcores", "4");
+		conf.set("mapreduce.job.running.map.limit", "200");
+		conf.set("mapreduce.job.running.reduce.limit", "100");
 
 		ControlledJob mrJob1 = null;
 		Job firstJob = null;
@@ -375,7 +394,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		job2.setMapperClass(ImpressionClickMapper.class);
 
 		FileOutputFormat.setOutputPath(job2, new Path(args[3]));
-		job2.setNumReduceTasks(24);  //3/2 * core
+		job2.setNumReduceTasks(24); // 3/2 * core
 		job2.setPartitionerClass(ClickNonClickPartitioner.class);
 		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
 		return job2.waitForCompletion(true) ? 0 : 1;
