@@ -341,6 +341,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 //		conf.set("mapreduce.job.running.map.limit", "200");
 //		conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
+		conf.set("mapreduce.task.timeout", "0");
 		
 
 		ControlledJob mrJob1 = null;
