@@ -338,8 +338,10 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
-		conf.set("mapreduce.reduce.java.opts", "-Xmx10024m");
-		conf.set("mapreduce.map.java.opts", "-Xmx10024m");
+		conf.set("mapreduce.reduce.java.opts", "-Xmx3072m");
+		conf.set("mapreduce.map.java.opts", "-Xmx6144m");
+		conf.set("mapreduce.map.memory.mb", "4096");
+		conf.set("mapreduce.reduce.memory.mb", "8192");
 //		conf.set("mapreduce.map.cpu.vcores", "4");
 //		conf.set("mapreduce.job.running.map.limit", "200");
 //		conf.set("mapreduce.job.running.reduce.limit", "100");
@@ -350,7 +352,6 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("dfs.namenode.handler.count", "32");
 		conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
-		conf.set("dfs.block.size", "256");
 		conf.set("mapred.child.java.opts", "-Xmx1G -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.tasktracker.map.tasks.maximum", "30");
 		conf.set("mapreduce.tasktracker.reduce.tasks.maximum", "30");
