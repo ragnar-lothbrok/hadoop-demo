@@ -36,6 +36,8 @@ import com.google.common.hash.Hashing;
  * 
  * dfs.permissions == false
  * 
+ * hadoop distcp /apps/ReporterBackup/Impression/2016* /apps/
+ * 
  * @author raghunandangupta
  *
  */
@@ -343,6 +345,16 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 //		conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
 		conf.set("mapreduce.task.timeout", "0");
+		conf.set("mapreduce.task.io.sort.factor", "64");
+		conf.set("mapreduce.task.io.sort.mb", "640");
+		conf.set("dfs.namenode.handler.count", "32");
+		conf.set("dfs.datanode.handler.count", "32");
+		conf.set("io.file.buffer.size", "65536");
+		conf.set("dfs.block.size", "256");
+		conf.set("mapred.child.java.opts", "-Xmx5G -XX:+UseConcMarkSweepGC");
+		conf.set("mapreduce.tasktracker.map.tasks.maximum", "30");
+		conf.set("mapreduce.tasktracker.reduce.tasks.maximum", "30");
+		
 		
 
 		ControlledJob mrJob1 = null;
