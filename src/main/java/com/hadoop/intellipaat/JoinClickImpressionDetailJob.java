@@ -17,6 +17,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.jobcontrol.ControlledJob;
@@ -101,7 +102,8 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 						map(context.getCurrentKey(), context.getCurrentValue(), context);
 					}
 				} catch (Exception sre) {
-					System.out.println("Mapper : "+sre+" "+System.currentTimeMillis());
+					String fileName = ((FileSplit)context.getInputSplit()).getPath().getName();
+					System.out.println("Mapper : "+sre+" "+System.currentTimeMillis()+" ==="+fileName);
 					break;
 				}
 			}
