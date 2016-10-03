@@ -38,6 +38,8 @@ import com.google.common.hash.Hashing;
  * 
  * hadoop distcp /apps/ReporterBackup/Impression/2016* /apps/
  * 
+ * hadoop dfs -Ddfs.replication=1 -put  Impression* /apps/
+ * 
  * @author raghunandangupta
  *
  */
@@ -339,17 +341,18 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
 		conf.set("mapreduce.reduce.java.opts", "-Xmx3072m");
-		conf.set("mapreduce.map.java.opts", "-Xmx6144m");
-		conf.set("mapreduce.map.memory.mb", "4096");
-		conf.set("mapreduce.reduce.memory.mb", "8192");
-//		conf.set("mapreduce.map.cpu.vcores", "4");
+		conf.set("mapreduce.map.java.opts", "-Xmx2048m");
+		conf.set("mapreduce.map.memory.mb", "3072");
+		conf.set("mapreduce.reduce.memory.mb", "4096");
+		conf.set("mapreduce.map.cpu.vcores", "8");
+		conf.set("mapreduce.reduce.cpu.vcores", "8");
 //		conf.set("mapreduce.job.running.map.limit", "200");
 //		conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
 		conf.set("mapreduce.task.timeout", "0");
 		conf.set("mapreduce.task.io.sort.factor", "64");
 		conf.set("mapreduce.task.io.sort.mb", "640");
-		conf.set("dfs.namenode.handler.count", "32");
+		conf.set("dfs.namenode.handler.count", "32");	
 		conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
 		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
