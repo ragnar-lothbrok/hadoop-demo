@@ -396,7 +396,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		job2.setMapperClass(ImpressionClickMapper.class);
 
 		FileOutputFormat.setOutputPath(job2, new Path(args[3]));
-		job2.setNumReduceTasks(24); // 3/2 * core
+		job2.setNumReduceTasks(100); // 3/2 * core
 		job2.setPartitionerClass(ClickNonClickPartitioner.class);
 		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
 		return job2.waitForCompletion(true) ? 0 : 1;
@@ -426,7 +426,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 
 		FileOutputFormat.setOutputPath(job, new Path(args[2]));
 
-		job.setNumReduceTasks(24);
+		job.setNumReduceTasks(100);
 
 		job.setPartitionerClass(TrackerPartitioner.class);
 
