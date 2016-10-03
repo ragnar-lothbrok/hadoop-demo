@@ -101,7 +101,8 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 						map(context.getCurrentKey(), context.getCurrentValue(), context);
 					}
 				} catch (Exception sre) {
-					System.out.println("Mapper : "+sre);
+					System.out.println("Mapper : "+sre+" "+System.currentTimeMillis());
+					break;
 				}
 			}
 			cleanup(context);
