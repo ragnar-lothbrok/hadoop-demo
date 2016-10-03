@@ -337,9 +337,11 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("dfs.replication", "1");
 		conf.set("mapreduce.reduce.java.opts", "-Xmx10024m");
 		conf.set("mapreduce.map.java.opts", "-Xmx10024m");
-		conf.set("mapreduce.map.cpu.vcores", "4");
-		conf.set("mapreduce.job.running.map.limit", "200");
-		conf.set("mapreduce.job.running.reduce.limit", "100");
+//		conf.set("mapreduce.map.cpu.vcores", "4");
+//		conf.set("mapreduce.job.running.map.limit", "200");
+//		conf.set("mapreduce.job.running.reduce.limit", "100");
+		conf.set("mapreduce.job.jvm.numtasks", "-1");
+		
 
 		ControlledJob mrJob1 = null;
 		Job firstJob = null;
