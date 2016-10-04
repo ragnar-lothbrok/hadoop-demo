@@ -29,6 +29,8 @@ import org.apache.hadoop.io.compress.SplittableCompressionCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hadoop.intellipaat.ThrottleableDecompressorStream;
+
 /**
  * For each "split" the gzipped input file is read from the beginning of the
  * file till the point where the split starts, thus reading, decompressing and

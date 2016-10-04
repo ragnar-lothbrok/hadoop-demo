@@ -336,7 +336,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		int result = -1;
 		Configuration conf = new Configuration();
 		conf.set("mapreduce.output.fileoutputformat.compress", "true");
-		conf.set("mapreduce.output.fileoutputformat.compress.codec", "com.hadoop.intellipaat.SplittableGzipCodec");
+		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.intellipaat.SplittableGzipCodec,org.apache.hadoop.io.compress.BZip2Codec");
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
@@ -350,12 +350,13 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 //		conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
 		conf.set("mapreduce.task.timeout", "0");
-		conf.set("mapreduce.task.io.sort.factor", "64");
-		conf.set("mapreduce.task.io.sort.mb", "640");
-		conf.set("dfs.namenode.handler.count", "32");	
-		conf.set("dfs.datanode.handler.count", "32");
-		conf.set("io.file.buffer.size", "65536");
+//		conf.set("mapreduce.task.io.sort.factor", "64");
+//		conf.set("mapreduce.task.io.sort.mb", "640");
+//		conf.set("dfs.namenode.handler.count", "32");	
+//		conf.set("dfs.datanode.handler.count", "32");
+//		conf.set("io.file.buffer.size", "65536");
 		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
+		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
 		
 		
 
