@@ -336,7 +336,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		int result = -1;
 		Configuration conf = new Configuration();
 		conf.set("mapreduce.output.fileoutputformat.compress", "true");
-		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.intellipaat.SplittableGzipCodec,org.apache.hadoop.io.compress.BZip2Codec");
+		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
