@@ -357,6 +357,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("io.file.buffer.size", "65536");
 		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
+		conf.set("mapreduce.map.speculative", "true");
 		
 		
 
