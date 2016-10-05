@@ -133,8 +133,7 @@ public class GzipReadTestJob extends Configured implements Tool {
 
 		JobControl jobControl = new JobControl("Click-Impression-aggregator");
 		jobControl.addJob(mrJob1);
-		jobControl.run();
-
+		handleRun(jobControl);
 		return result;
 	}
 
@@ -175,12 +174,21 @@ public class GzipReadTestJob extends Configured implements Tool {
 
 	@Override
 	public int run(String[] args) throws Exception {
-		try {
-			return runMRJobs(args);
-		} catch (IllegalStateException e) {
-			e.printStackTrace();
-			System.exit(1);
+		return runMRJobs(args);
+	}
+
+	public static void handleRun(JobControl control) {
+		JobRunner runner = new JobRunner(control);
+		Thread t = new Thread(runner);
+		t.start();
+
+		while (!control.allFinished()) {
+			System.out.println("Still running...");
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
-		return 1;
 	}
 }
