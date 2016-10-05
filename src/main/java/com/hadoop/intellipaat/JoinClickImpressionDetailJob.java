@@ -38,7 +38,7 @@ import com.google.common.hash.Hashing;
  * 
  * hadoop distcp /apps/ReporterBackup/Impression/2016* /apps/
  * 
- * hadoop dfs -Ddfs.replication=1 -put  Impression* /apps/
+ * hadoop dfs -Ddfs.replication=1 -put Impression* /apps/
  * 
  * @author raghunandangupta
  *
@@ -90,24 +90,6 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 					context.write(new Text(words[18].trim()), new Text(IMPRESSION_PREFIX + value.toString()));
 				}
 			}
-		}
-
-		@Override
-		public void run(Mapper<LongWritable, Text, Text, Text>.Context context) throws IOException, InterruptedException {
-			setup(context);
-			while (true) {
-				try {
-					if (!context.nextKeyValue()) {
-						break;
-					} else {
-						map(context.getCurrentKey(), context.getCurrentValue(), context);
-					}
-				} catch (Exception sre) {
-					System.out.println("Mapper : "+sre+" "+System.currentTimeMillis());
-					break;
-				}
-			}
-			cleanup(context);
 		}
 	}
 
@@ -184,7 +166,8 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		StringBuilder sb = new StringBuilder();
 		try {
 			// Return if ad type is not product and price is zero
-			if ((words == null || words.length < 24) || (!(words[24].trim().length() > 0 && Float.parseFloat(words[24].trim()) > 0) || !("product".equalsIgnoreCase(words[15].trim())))) {
+			if ((words == null || words.length < 24) || (!(words[24].trim().length() > 0 && Float.parseFloat(words[24].trim()) > 0)
+					|| !("product".equalsIgnoreCase(words[15].trim())))) {
 				return "";
 			}
 
@@ -342,20 +325,18 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("mapreduce.reduce.memory.mb", "10240");
 		conf.set("mapreduce.map.cpu.vcores", "8");
 		conf.set("mapreduce.reduce.cpu.vcores", "8");
-//		conf.set("mapreduce.job.running.map.limit", "200");
-//		conf.set("mapreduce.job.running.reduce.limit", "100");
+		// conf.set("mapreduce.job.running.map.limit", "200");
+		// conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
 		conf.set("mapreduce.task.timeout", "0");
-//		conf.set("mapreduce.task.io.sort.factor", "64");
-//		conf.set("mapreduce.task.io.sort.mb", "640");
-//		conf.set("dfs.namenode.handler.count", "32");	
-//		conf.set("dfs.datanode.handler.count", "32");
+		// conf.set("mapreduce.task.io.sort.factor", "64");
+		// conf.set("mapreduce.task.io.sort.mb", "640");
+		// conf.set("dfs.namenode.handler.count", "32");
+		// conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
 		conf.set("mapred.child.java.opts", "-Xmx15g -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
 		conf.set("mapreduce.map.speculative", "true");
-		
-		
 
 		ControlledJob mrJob1 = null;
 		Job firstJob = null;

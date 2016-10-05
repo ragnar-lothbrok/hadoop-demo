@@ -11,7 +11,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
-import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -32,7 +31,7 @@ import org.apache.hadoop.util.ToolRunner;
  * 
  * hadoop distcp /apps/ReporterBackup/Impression/2016* /apps/
  * 
- * hadoop dfs -Ddfs.replication=1 -put  Impression* /apps/
+ * hadoop dfs -Ddfs.replication=1 -put Impression* /apps/
  * 
  * @author raghunandangupta
  *
@@ -52,22 +51,38 @@ public class GzipReadTestJob extends Configured implements Tool {
 
 	}
 
+	private static String[] HEADERS = new String[] { "accountId", "brand", "campaignId", "inverseTimestamp", "supc", "category", "pagetype", "site",
+			"sellerCode", "amount", "publisherRevenue", "pog", "device_id", "email", "user_id", "adType", "url", "cookieId", "trackerId",
+			"creativeId", "timestamp", "relevancy_score", "relevancy_category", "ref_tag", "offer_price", "rating", "discount", "sdplus",
+			"no_of_rating", "created_time", "normalized_rating", "os", "browser", "city", "state", "country" };
+
 	private static class ImpressionMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		@Override
 		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
-				throws IOException, InterruptedException {}
+				throws IOException, InterruptedException {
+			// Excluding header
+			if (!(value.toString().indexOf(HEADERS[0]) != -1)) {
+				String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+				if (words.length >= 32) {
+					context.write(new Text(words[18].trim()), new Text(IMPRESSION_PREFIX + value.toString()));
+				}
+			}
+		}
 
 	}
 
-	private static class ClickMapper extends Mapper<LongWritable, Text, Text, Text> {}
+	private static class ClickMapper extends Mapper<LongWritable, Text, Text, Text> {
 
-	/**
-	 * Here file will be committed in libsvm format.
-	 *
-	 */
-	private static class ImpressionClickReducer extends Reducer<Text, Text, Text, Text> {}
-
+		@Override
+		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
+				throws IOException, InterruptedException {
+			String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+			if (words.length > 18) {
+				context.write(new Text(words[18].trim()), new Text(CLICK_PREFIX + value.toString()));
+			}
+		}
+	}
 
 	public static void main(String[] args) throws Exception {
 		ToolRunner.run(new Configuration(), new GzipReadTestJob(), args);
@@ -78,7 +93,8 @@ public class GzipReadTestJob extends Configured implements Tool {
 		int result = -1;
 		Configuration conf = new Configuration();
 		conf.set("mapreduce.output.fileoutputformat.compress", "true");
-		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.intellipaat.SplittableGzipCodec,org.apache.hadoop.io.compress.BZip2Codec");
+		conf.set("mapreduce.output.fileoutputformat.compress.codec",
+				"org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.intellipaat.SplittableGzipCodec,org.apache.hadoop.io.compress.BZip2Codec");
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
@@ -88,20 +104,18 @@ public class GzipReadTestJob extends Configured implements Tool {
 		conf.set("mapreduce.reduce.memory.mb", "4096");
 		conf.set("mapreduce.map.cpu.vcores", "8");
 		conf.set("mapreduce.reduce.cpu.vcores", "8");
-//		conf.set("mapreduce.job.running.map.limit", "200");
-//		conf.set("mapreduce.job.running.reduce.limit", "100");
+		// conf.set("mapreduce.job.running.map.limit", "200");
+		// conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
 		conf.set("mapreduce.task.timeout", "0");
-//		conf.set("mapreduce.task.io.sort.factor", "64");
-//		conf.set("mapreduce.task.io.sort.mb", "640");
-//		conf.set("dfs.namenode.handler.count", "32");	
-//		conf.set("dfs.datanode.handler.count", "32");
+		// conf.set("mapreduce.task.io.sort.factor", "64");
+		// conf.set("mapreduce.task.io.sort.mb", "640");
+		// conf.set("dfs.namenode.handler.count", "32");
+		// conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
 		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
 		conf.set("mapreduce.map.speculative", "true");
-		
-		
 
 		ControlledJob mrJob1 = null;
 		Job firstJob = null;
@@ -133,8 +147,6 @@ public class GzipReadTestJob extends Configured implements Tool {
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
-		job.setReducerClass(ImpressionClickReducer.class);
-
 		FileInputFormat.setInputDirRecursive(job, true);
 		/**
 		 * Here directory of impressions will be present
@@ -146,8 +158,6 @@ public class GzipReadTestJob extends Configured implements Tool {
 		MultipleInputs.addInputPath(job, new Path(args[1]), TextInputFormat.class, ClickMapper.class);
 
 		FileOutputFormat.setOutputPath(job, new Path(args[2]));
-
-		job.setNumReduceTasks(20);
 
 		job.setPartitionerClass(TrackerPartitioner.class);
 
