@@ -94,7 +94,7 @@ public class GzipReadTestJob extends Configured implements Tool {
 		Configuration conf = new Configuration();
 		conf.set("mapreduce.output.fileoutputformat.compress", "true");
 		conf.set("mapreduce.output.fileoutputformat.compress.codec",
-				"org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.intellipaat.SplittableGzipCodec,org.apache.hadoop.io.compress.BZip2Codec");
+				"org.apache.hadoop.io.compress.GzipCodec");
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
