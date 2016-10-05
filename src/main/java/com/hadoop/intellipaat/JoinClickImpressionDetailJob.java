@@ -370,7 +370,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		JobControl jobControl = new JobControl("Click-Impression-aggregator");
 		jobControl.addJob(mrJob1);
 		jobControl.addJob(mrJob2);
-		jobControl.run();
+		JobHandler.handleRun(jobControl);
 		return result;
 	}
 

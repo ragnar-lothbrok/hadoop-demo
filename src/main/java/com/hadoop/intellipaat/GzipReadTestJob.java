@@ -93,8 +93,7 @@ public class GzipReadTestJob extends Configured implements Tool {
 		int result = -1;
 		Configuration conf = new Configuration();
 		conf.set("mapreduce.output.fileoutputformat.compress", "true");
-		conf.set("mapreduce.output.fileoutputformat.compress.codec",
-				"org.apache.hadoop.io.compress.GzipCodec");
+		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.GzipCodec");
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
@@ -133,7 +132,7 @@ public class GzipReadTestJob extends Configured implements Tool {
 
 		JobControl jobControl = new JobControl("Click-Impression-aggregator");
 		jobControl.addJob(mrJob1);
-		handleRun(jobControl);
+		JobHandler.handleRun(jobControl);
 		return result;
 	}
 
@@ -177,18 +176,4 @@ public class GzipReadTestJob extends Configured implements Tool {
 		return runMRJobs(args);
 	}
 
-	public static void handleRun(JobControl control) {
-		JobRunner runner = new JobRunner(control);
-		Thread t = new Thread(runner);
-		t.start();
-
-		while (!control.allFinished()) {
-			System.out.println("Still running...");
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-	}
 }
