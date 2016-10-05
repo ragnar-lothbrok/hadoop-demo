@@ -98,10 +98,10 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
-		conf.set("mapreduce.reduce.java.opts", "-Xmx3072m");
-		conf.set("mapreduce.map.java.opts", "-Xmx2048m");
-		conf.set("mapreduce.map.memory.mb", "3072");
-		conf.set("mapreduce.reduce.memory.mb", "4096");
+		conf.set("mapreduce.reduce.java.opts", "-Xmx9g");
+		conf.set("mapreduce.map.java.opts", "-Xmx9g");
+		conf.set("mapreduce.map.memory.mb", "10240");
+		conf.set("mapreduce.reduce.memory.mb", "10240");
 		conf.set("mapreduce.map.cpu.vcores", "8");
 		conf.set("mapreduce.reduce.cpu.vcores", "8");
 //		conf.set("mapreduce.job.running.map.limit", "200");
@@ -113,7 +113,7 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 //		conf.set("dfs.namenode.handler.count", "32");	
 //		conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
-		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
+		conf.set("mapred.child.java.opts", "-Xmx15g -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
 		conf.set("mapreduce.map.speculative", "true");
 		

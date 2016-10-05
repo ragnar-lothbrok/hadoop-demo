@@ -89,8 +89,6 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 				if (words.length >= 32) {
 					context.write(new Text(words[18].trim()), new Text(IMPRESSION_PREFIX + value.toString()));
 				}
-			} else {
-				context.write(new Text(""), value);
 			}
 		}
 
@@ -121,8 +119,6 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 			String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 			if (words.length > 18) {
 				context.write(new Text(words[18].trim()), new Text(CLICK_PREFIX + value.toString()));
-			} else {
-				context.write(new Text(""), new Text("1"));
 			}
 		}
 	}
@@ -188,7 +184,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		StringBuilder sb = new StringBuilder();
 		try {
 			// Return if ad type is not product and price is zero
-			if (!(words[24].trim().length() > 0 && Float.parseFloat(words[24].trim()) > 0) || !("product".equalsIgnoreCase(words[15].trim()))) {
+			if ((words == null || words.length < 24) || (!(words[24].trim().length() > 0 && Float.parseFloat(words[24].trim()) > 0) || !("product".equalsIgnoreCase(words[15].trim())))) {
 				return "";
 			}
 
@@ -340,10 +336,10 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
 		conf.set("dfs.replication", "1");
-		conf.set("mapreduce.reduce.java.opts", "-Xmx3072m");
-		conf.set("mapreduce.map.java.opts", "-Xmx2048m");
-		conf.set("mapreduce.map.memory.mb", "3072");
-		conf.set("mapreduce.reduce.memory.mb", "4096");
+		conf.set("mapreduce.reduce.java.opts", "-Xmx9g");
+		conf.set("mapreduce.map.java.opts", "-Xmx9g");
+		conf.set("mapreduce.map.memory.mb", "10240");
+		conf.set("mapreduce.reduce.memory.mb", "10240");
 		conf.set("mapreduce.map.cpu.vcores", "8");
 		conf.set("mapreduce.reduce.cpu.vcores", "8");
 //		conf.set("mapreduce.job.running.map.limit", "200");
@@ -355,7 +351,7 @@ public class JoinClickImpressionDetailJob extends Configured implements Tool {
 //		conf.set("dfs.namenode.handler.count", "32");	
 //		conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
-		conf.set("mapred.child.java.opts", "-Xmx200m -XX:+UseConcMarkSweepGC");
+		conf.set("mapred.child.java.opts", "-Xmx15g -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
 		conf.set("mapreduce.map.speculative", "true");
 		
