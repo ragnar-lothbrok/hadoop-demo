@@ -122,7 +122,7 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 		ControlledJob mrJob2 = null;
 		try {
 			mrJob2 = new ControlledJob(conf);
-			deleteDirectory(args[2], conf);
+			deleteDirectory(args[1], conf);
 			mrJob2.setJobName("IMPRESSION_CLICK_COMBINE_JOB1");
 			Job job2 = mrJob2.getJob();
 			result += secondMapReduceJob(args, job2);
@@ -150,10 +150,10 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 		job2.setReducerClass(ImpressionAndClickReducer.class);
 
 		FileInputFormat.setInputDirRecursive(job2, true);
-		FileInputFormat.addInputPath(job2, new Path(args[1]));
+		FileInputFormat.addInputPath(job2, new Path(args[0]));
 		job2.setMapperClass(ImpressionClickMapper.class);
 
-		FileOutputFormat.setOutputPath(job2, new Path(args[2]));
+		FileOutputFormat.setOutputPath(job2, new Path(args[1]));
 		job2.setNumReduceTasks(80); // 3/2 * core
 		job2.setPartitionerClass(ClickNonClickPartitioner.class);
 		System.out.println("Time taken : " + (System.currentTimeMillis() - startTime) / 1000);
