@@ -77,7 +77,6 @@ public class JoinClickImpressionDetailWithDistributedCacheJob extends Configured
 		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
 				throws IOException, InterruptedException {
 			// Excluding header
-			System.out.println(clicksTrackerIdMap);
 			if (!(value.toString().indexOf(LibsvmConvertor.HEADERS[0]) != -1)) {
 				String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 				if (words.length >= 32) {
