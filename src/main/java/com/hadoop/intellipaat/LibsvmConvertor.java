@@ -113,7 +113,7 @@ public class LibsvmConvertor {
 	private static int[] convertToDay_Month_Year(String timeStamp) {
 		Calendar cal = Calendar.getInstance();
 		cal.setTimeInMillis(Long.parseLong(timeStamp));
-		return new int[] { cal.get(Calendar.HOUR), cal.get(Calendar.DAY_OF_WEEK) };
+		return new int[] { cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.DAY_OF_WEEK) };
 	}
 
 	private static byte[] convertPageTypeToBytes(String siteId) {
