@@ -32,7 +32,7 @@ import org.apache.hadoop.util.ToolRunner;
  * 
  * hadoop distcp /apps/ReporterBackup/Impression/2016* /apps/
  * 
- * hadoop dfs -Ddfs.replication=1 -put  Impression* /apps/
+ * hadoop dfs -Ddfs.replication=1 -put Impression* /apps/
  * 
  * @author raghunandangupta
  *
@@ -44,15 +44,6 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 	public static final String CLICK_PREFIX = "CLICK_PREFIX~";
 	private static final Random random = new Random();
 
-	public static class TrackerPartitioner extends Partitioner<Text, Text> {
-
-		@Override
-		public int getPartition(Text key, Text value, int numPartitions) {
-			return (key.toString().hashCode() & Integer.MAX_VALUE) % numPartitions;
-		}
-
-	}
-
 	public static class ClickNonClickPartitioner extends Partitioner<Text, Text> {
 
 		@Override
@@ -60,7 +51,7 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 			if (key.toString().equals("1")) {
 				return numPartitions - 1;
 			} else {
-				return random.nextInt(7);
+				return random.nextInt(numPartitions - 1);
 			}
 		}
 	}
@@ -104,19 +95,19 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 		conf.set("mapreduce.reduce.memory.mb", "10240");
 		conf.set("mapreduce.map.cpu.vcores", "8");
 		conf.set("mapreduce.reduce.cpu.vcores", "8");
-//		conf.set("mapreduce.job.running.map.limit", "200");
-//		conf.set("mapreduce.job.running.reduce.limit", "100");
+		// conf.set("mapreduce.job.running.map.limit", "200");
+		// conf.set("mapreduce.job.running.reduce.limit", "100");
 		conf.set("mapreduce.job.jvm.numtasks", "-1");
 		conf.set("mapreduce.task.timeout", "0");
-//		conf.set("mapreduce.task.io.sort.factor", "64");
-//		conf.set("mapreduce.task.io.sort.mb", "640");
-//		conf.set("dfs.namenode.handler.count", "32");	
-//		conf.set("dfs.datanode.handler.count", "32");
+		// conf.set("mapreduce.task.io.sort.factor", "64");
+		// conf.set("mapreduce.task.io.sort.mb", "640");
+		// conf.set("dfs.namenode.handler.count", "32");
+		// conf.set("dfs.datanode.handler.count", "32");
 		conf.set("io.file.buffer.size", "65536");
 		conf.set("mapred.child.java.opts", "-Xmx15g -XX:+UseConcMarkSweepGC");
 		conf.set("mapreduce.input.fileinputformat.split.minsize", "33554432");
 		conf.set("mapreduce.map.speculative", "true");
-		
+
 		System.out.println("Second Job Started=============");
 
 		ControlledJob mrJob2 = null;
