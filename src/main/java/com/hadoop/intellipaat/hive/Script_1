@@ -1,0 +1,16 @@
+show databases;
+
+create database daily_show_guests;
+
+use daily_show_guests;
+
+create table dialy_show_guests(year int,role string,p_date string,profession string,name string) row format delimited fields terminated by ',';
+
+describe extended dialy_show_guests;
+
+!hdfs dfs -copyFromLocal /home/raghunandangupta/inputfiles/dialy_show_guests /user/hive/warehouse/daily_show_guests.db/dialy_show_guests;
+
+select * from dialy_show_guests;
+
+drop table dialy_show_guests;
+

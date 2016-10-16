@@ -75,10 +75,21 @@ public class JoinClickImpressionAggegationJob extends Configured implements Tool
 			}
 		}
 	}
+	
+	
+	
+	private static void abc(){
+		try {
+			Runtime.getRuntime().exec("hadoop -version");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void main(String[] args) throws Exception {
-		ToolRunner.run(new Configuration(), new JoinClickImpressionAggegationJob(), args);
-		System.exit(1);
+		abc();
+//		ToolRunner.run(new Configuration(), new JoinClickImpressionAggegationJob(), args);
+//		System.exit(1);
 	}
 
 	private static int runMRJobs(String[] args) {
