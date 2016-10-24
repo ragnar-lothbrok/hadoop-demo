@@ -84,10 +84,10 @@ public class LibsvmConvertor {
 				}
 			}
 
-			// OS
+			/*// OS
 			if (words[31].trim().length() > 0) {
 				sb.append("23:" + hashCode(words[31].trim())).append(SPACE);
-			}
+			}*/
 
 			// Browser
 			if (words[32].trim().length() > 0) {
