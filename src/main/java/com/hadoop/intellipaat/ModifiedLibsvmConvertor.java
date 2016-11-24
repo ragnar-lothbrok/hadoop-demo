@@ -79,42 +79,46 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private String toCsv(ClickData clickData) throws IllegalArgumentException, IllegalAccessException {
 		StringBuilder sb = new StringBuilder();
-		sb.append((isEmpty(clickData.getClicked()) ? 0 : 1) + "\t");
-		Field[] fields = clickData.getClass().getDeclaredFields();
-		int index = 0;
-		for (int i = 0; i < fields.length - 1; i++) {
-			fields[i].setAccessible(true);
-			if (fields[i].getType().equals(String.class)) {
+		try{
+			sb.append((isEmpty(clickData.getClicked()) ? 0 : 1) + "\t");
+			Field[] fields = clickData.getClass().getDeclaredFields();
+			int index = 0;
+			for (int i = 0; i < fields.length - 1; i++) {
+				fields[i].setAccessible(true);
+				if (fields[i].getType().equals(String.class)) {
 
-				if ("platform".equalsIgnoreCase(fields[i].getName())) {
-					addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb);
-					index++;
-				} else if ("pageType".equalsIgnoreCase(fields[i].getName())) {
-					addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb);
-					index++;
-				} else if ("adType".equalsIgnoreCase(fields[i].getName())) {
-					addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb);
-					index++;
-				} else {
-					boolean isIgnored = false;
-					for (int k = 0; k < ignoreColumnsColumns.length; k++) {
-						if (ignoreColumnsColumns[k].equalsIgnoreCase(fields[i].getName())) {
-							isIgnored = true;
+					if ("platform".equalsIgnoreCase(fields[i].getName())) {
+						addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb);
+						index++;
+					} else if ("pageType".equalsIgnoreCase(fields[i].getName())) {
+						addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb);
+						index++;
+					} else if ("adType".equalsIgnoreCase(fields[i].getName())) {
+						addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb);
+						index++;
+					} else {
+						boolean isIgnored = false;
+						for (int k = 0; k < ignoreColumnsColumns.length; k++) {
+							if (ignoreColumnsColumns[k].equalsIgnoreCase(fields[i].getName())) {
+								isIgnored = true;
+								index++;
+								break;
+							}
+						}
+						if (!isIgnored) {
+							addHashCode(fields[i].get(clickData).toString(), index, sb);
 							index++;
-							break;
 						}
 					}
-					if (!isIgnored) {
-						addHashCode(fields[i].get(clickData).toString(), index, sb);
-						index++;
-					}
+				} else if (fields[i].getType().equals(Boolean.class)) {
+					sb.append((index++) + COLON + getValue(Boolean.parseBoolean(fields[i].get(clickData).toString())) + SEPERATOR);
+				} else {
+					addFloat(fields[i].getFloat(clickData), index, sb);
+					index++;
 				}
-			} else if (fields[i].getType().equals(Boolean.class)) {
-				sb.append((index++) + COLON + getValue(Boolean.parseBoolean(fields[i].get(clickData).toString())) + SEPERATOR);
-			} else {
-				addFloat(fields[i].getFloat(clickData), index, sb);
-				index++;
 			}
+		}catch(Exception exception){
+			System.out.println("Exception occured "+ clickData + exception);
 		}
 		return sb.toString();
 	}
@@ -176,10 +180,15 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		List<ClickData> list = csv.parse(setColumMapping(), csvReader);
 		System.out.println("Total records " + list.size());
 		StringBuilder sb = new StringBuilder();
+		int count = 0;
 		for (Object object : list) {
-			sb.append(toCsv((ClickData) object) + "\n");
+			String value = toCsv((ClickData) object);
+			if(!isEmpty(value)){
+				sb.append(toCsv((ClickData) object) + "\n");
+				count++;
+			}
 		}
-
+		System.out.println("Total actual records " + count);
 		createTrainFile(sb.toString(), Calendar.getInstance().getTimeInMillis()+"");
 	}
 
