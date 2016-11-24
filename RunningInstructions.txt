@@ -37,3 +37,8 @@ hadoop jar /home/raghunandangupta/gitPro/hadoop-demo/target/hadoop-demo-0.0.1-SN
 
 hadoop dfs -mkdir -p /apps/ReporterBackup/Click
 hadoop dfs -rm -r /apps/ReporterBackup/Impression
+
+
+For Libsvm
+cd target
+java -cp lib/*:hadoop-demo-0.0.1-SNAPSHOT.jar  com.hadoop.intellipaat.ModifiedLibsvmConvertor /home/raghunandangupta/Downloads/click_impression_20161115/click_impression_20161115/lol /home/raghunandangupta/Downloads/click_impression_20161115/click_impression_20161115
