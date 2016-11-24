@@ -34,7 +34,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 	private static final String[] dummyColumns = { "platform", "pageType", "adType" };
 
 	private static final String[] ignoreColumnsColumns = { "keyUserDeviceId", "itemPogId", "accId", "dpDay", "dpHour", "osVersion", "browserDetails",
-			"guid", "widgetId", "trackerId","adSpaceType","displayName","sellerRatingNonSdPlus" };
+			"guid", "widgetId", "trackerId", "adSpaceType", "displayName", "sellerRatingNonSdPlus" };
 
 	public static MappingStrategy<ClickData> setColumMapping() {
 		ColumnPositionMappingStrategy<ClickData> strategy = new ColumnPositionMappingStrategy<ClickData>();
@@ -79,7 +79,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private String toCsv(ClickData clickData) throws IllegalArgumentException, IllegalAccessException {
 		StringBuilder sb = new StringBuilder();
-		try{
+		try {
 			sb.append((isEmpty(clickData.getClicked()) ? 0 : 1) + "\t");
 			Field[] fields = clickData.getClass().getDeclaredFields();
 			int index = 0;
@@ -117,8 +117,8 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 					index++;
 				}
 			}
-		}catch(Exception exception){
-			System.out.println("Exception occured "+ clickData + exception);
+		} catch (Exception exception) {
+			System.out.println("Exception occured " + clickData + exception);
 		}
 		return sb.toString();
 	}
@@ -134,8 +134,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 	}
 
 	private void createTrainFile(String outputDir, String data, String filePath) throws Exception {
-		BufferedWriter br = new BufferedWriter(new FileWriter(
-				new File(outputDir+"/" + filePath+"-libsvm")));
+		BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputDir + "/" + filePath + "-libsvm")));
 		br.write(data);
 		br.close();
 	}
@@ -147,12 +146,12 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		File[] listOfFiles = folder.listFiles();
 		for (int i = 0; i < listOfFiles.length; i++) {
 			if (listOfFiles[i].isFile()) {
-				new ModifiedLibsvmConvertor().formatData(listOfFiles[i].getAbsolutePath(),args[1]);
+				new ModifiedLibsvmConvertor().formatData(listOfFiles[i].getAbsolutePath(), args[1]);
 			}
 		}
 	}
 
-	private void formatData(String path,String outputDir) throws Exception {
+	private void formatData(String path, String outputDir) throws Exception {
 		CsvToBean<ClickData> csv = new CsvToBean<ClickData>() {
 			protected Object convertValue(String value, PropertyDescriptor prop) throws InstantiationException, IllegalAccessException {
 				PropertyEditor editor = getPropertyEditor(prop);
@@ -174,22 +173,27 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 				return obj;
 			}
 		};
-		CSVReader csvReader = new CSVReader(
-				new FileReader(new File(path)), ',', '"');
+		CSVReader csvReader = new CSVReader(new FileReader(new File(path)), ',', '"');
 		csvReader.readNext();
 		List<ClickData> list = csv.parse(setColumMapping(), csvReader);
 		System.out.println("Total records " + list.size());
-		StringBuilder sb = new StringBuilder();
+		StringBuilder clickLibsvm = new StringBuilder();
+		StringBuilder nonClickLibsvm = new StringBuilder();
 		int count = 0;
 		for (Object object : list) {
 			String value = toCsv((ClickData) object);
-			if(!isEmpty(value)){
-				sb.append(toCsv((ClickData) object) + "\n");
+			if (!isEmpty(value)) {
+				if (value.startsWith("1")) {
+					clickLibsvm.append(toCsv((ClickData) object) + "\n");
+				} else {
+					nonClickLibsvm.append(toCsv((ClickData) object) + "\n");
+				}
 				count++;
 			}
 		}
 		System.out.println("Total actual records " + count);
-		createTrainFile(outputDir,sb.toString(), Calendar.getInstance().getTimeInMillis()+"");
+		createTrainFile(outputDir, clickLibsvm.toString(), Calendar.getInstance().getTimeInMillis() + "-1");
+		createTrainFile(outputDir, nonClickLibsvm.toString(), Calendar.getInstance().getTimeInMillis() + "-0");
 	}
 
 	@Override
