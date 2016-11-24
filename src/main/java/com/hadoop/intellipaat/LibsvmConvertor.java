@@ -1,20 +1,14 @@
 package com.hadoop.intellipaat;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Calendar;
+public class LibsvmConvertor implements ILibsvmConvertor {
 
-import com.google.common.hash.Hashing;
-
-public class LibsvmConvertor {
-	
 	public static String[] HEADERS = new String[] { "accountId", "brand", "campaignId", "inverseTimestamp", "supc", "category", "pagetype", "site",
 			"sellerCode", "amount", "publisherRevenue", "pog", "device_id", "email", "user_id", "adType", "url", "cookieId", "trackerId",
 			"creativeId", "timestamp", "relevancy_score", "relevancy_category", "ref_tag", "offer_price", "rating", "discount", "sdplus",
 			"no_of_rating", "created_time", "normalized_rating", "os", "browser", "city", "state", "country" };
-	
-	private static final String SPACE = " ";
 
-	public static String convertToLibsvm(String[] words) {
+	@Override
+	public String convertToLibsvm(String[] words) {
 		StringBuilder sb = new StringBuilder();
 		try {
 			// Return if ad type is not product and price is zero
@@ -37,7 +31,7 @@ public class LibsvmConvertor {
 			// Site Ids
 			byte[] siteTypes = convertSiteIdToBytes(words[7].trim());
 			if (siteTypes != null) {
-				sb.append("7:" + pageTypes[0]).append(SPACE).append("8:" + pageTypes[1]).append(SPACE).append("9:" + pageTypes[2]).append(SPACE);
+				sb.append("7:" + siteTypes[0]).append(SPACE).append("8:" + siteTypes[1]).append(SPACE).append("9:" + siteTypes[2]).append(SPACE);
 			}
 
 			sb.append("10:" + hashCode(words[8].trim())).append(SPACE) // Seller
@@ -84,10 +78,10 @@ public class LibsvmConvertor {
 				}
 			}
 
-			/*// OS
-			if (words[31].trim().length() > 0) {
-				sb.append("23:" + hashCode(words[31].trim())).append(SPACE);
-			}*/
+			/*
+			 * // OS if (words[31].trim().length() > 0) { sb.append("23:" +
+			 * hashCode(words[31].trim())).append(SPACE); }
+			 */
 
 			// Browser
 			if (words[32].trim().length() > 0) {
@@ -99,63 +93,4 @@ public class LibsvmConvertor {
 		}
 		return sb.toString();
 	}
-
-	private static final byte[] UNKNOWN = { 0, 0, 0 };
-	private static final byte[] SLP = { 1, 0, 0 };
-	private static final byte[] CLP = { 0, 1, 0 };
-	private static final byte[] PDP = { 0, 0, 1 };
-
-	private static final byte[] WEB = { 1, 0, 0 };
-	private static final byte[] WAP = { 0, 1, 0 };
-	private static final byte[] APP = { 0, 0, 1 };
-	private static final byte[] GENERIC = { 0, 0, 0 };
-
-	private static int[] convertToDay_Month_Year(String timeStamp) {
-		Calendar cal = Calendar.getInstance();
-		cal.setTimeInMillis(Long.parseLong(timeStamp));
-		return new int[] { cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.DAY_OF_WEEK) };
-	}
-
-	private static byte[] convertPageTypeToBytes(String siteId) {
-		byte[] value = null;
-		switch (siteId) {
-		case "slp":
-			value = SLP;
-			break;
-		case "clp":
-			value = CLP;
-			break;
-		case "pdp":
-			value = PDP;
-			break;
-		default:
-			value = UNKNOWN;
-		}
-		return value;
-	}
-
-	private static byte[] convertSiteIdToBytes(String siteId) {
-		byte[] value = null;
-		switch (siteId) {
-		case "101":
-			value = WEB;
-			break;
-		case "102":
-			value = WAP;
-			break;
-		case "103":
-		case "104":
-		case "105":
-			value = APP;
-			break;
-		default:
-			value = GENERIC;
-		}
-		return value;
-	}
-
-	private static String hashCode(String value) {
-		return Math.abs(Hashing.murmur3_32().hashString(value, StandardCharsets.UTF_8).hashCode()) + "";
-	}
-
 }

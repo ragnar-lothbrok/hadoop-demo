@@ -80,7 +80,7 @@ public class JoinClickImpressionDetailWithDistributedCacheJob extends Configured
 			if (!(value.toString().indexOf(LibsvmConvertor.HEADERS[0]) != -1)) {
 				String words[] = value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 				if (words.length >= 32) {
-					String record = LibsvmConvertor.convertToLibsvm(value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1));
+					String record = new LibsvmConvertor().convertToLibsvm(value.toString().split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 					if (record.trim().length() > 0) {
 						VALUE.set(record);
 						if (clicksTrackerIdMap.containsKey(words[18].trim().toLowerCase())) {
