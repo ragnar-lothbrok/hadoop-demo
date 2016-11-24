@@ -133,9 +133,9 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		}
 	}
 
-	private void createTrainFile(String data, String filePath) throws Exception {
+	private void createTrainFile(String outputDir, String data, String filePath) throws Exception {
 		BufferedWriter br = new BufferedWriter(new FileWriter(
-				new File("/home/raghunandangupta/Downloads/click_impression_20161115/click_impression_20161115/" + filePath + ".csv")));
+				new File(outputDir+"/" + filePath+"-libsvm")));
 		br.write(data);
 		br.close();
 	}
@@ -147,12 +147,12 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		File[] listOfFiles = folder.listFiles();
 		for (int i = 0; i < listOfFiles.length; i++) {
 			if (listOfFiles[i].isFile()) {
-				new ModifiedLibsvmConvertor().formatData(listOfFiles[i].getAbsolutePath());
+				new ModifiedLibsvmConvertor().formatData(listOfFiles[i].getAbsolutePath(),args[1]);
 			}
 		}
 	}
 
-	private void formatData(String path) throws Exception {
+	private void formatData(String path,String outputDir) throws Exception {
 		CsvToBean<ClickData> csv = new CsvToBean<ClickData>() {
 			protected Object convertValue(String value, PropertyDescriptor prop) throws InstantiationException, IllegalAccessException {
 				PropertyEditor editor = getPropertyEditor(prop);
@@ -189,7 +189,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			}
 		}
 		System.out.println("Total actual records " + count);
-		createTrainFile(sb.toString(), Calendar.getInstance().getTimeInMillis()+"");
+		createTrainFile(outputDir,sb.toString(), Calendar.getInstance().getTimeInMillis()+"");
 	}
 
 	@Override
