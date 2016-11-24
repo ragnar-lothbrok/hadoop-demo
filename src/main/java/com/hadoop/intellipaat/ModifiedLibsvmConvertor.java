@@ -7,10 +7,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.lang.reflect.Field;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -137,15 +137,18 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 	}
 
 	public static void main(String[] args) throws Exception {
-		new ModifiedLibsvmConvertor().formatData();
-		for (Entry<String, Set<String>> entry : map.entrySet()) {
-			if (entry.getValue().size() < 10) {
-				System.out.println(entry.getKey() + " " + entry.getValue());
+
+		File folder = new File(args[0]);
+		Map<String, List<String>> hashMap = new HashMap<String, List<String>>();
+		File[] listOfFiles = folder.listFiles();
+		for (int i = 0; i < listOfFiles.length; i++) {
+			if (listOfFiles[i].isFile()) {
+				new ModifiedLibsvmConvertor().formatData(listOfFiles[i].getAbsolutePath());
 			}
 		}
 	}
 
-	private void formatData() throws Exception {
+	private void formatData(String path) throws Exception {
 		CsvToBean<ClickData> csv = new CsvToBean<ClickData>() {
 			protected Object convertValue(String value, PropertyDescriptor prop) throws InstantiationException, IllegalAccessException {
 				PropertyEditor editor = getPropertyEditor(prop);
@@ -168,7 +171,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			}
 		};
 		CSVReader csvReader = new CSVReader(
-				new FileReader(new File("/home/raghunandangupta/Downloads/click_impression_20161115/click_impression_20161115/aa")), ',', '"');
+				new FileReader(new File(path)), ',', '"');
 		csvReader.readNext();
 		List<ClickData> list = csv.parse(setColumMapping(), csvReader);
 		System.out.println("Total records " + list.size());
@@ -177,7 +180,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			sb.append(toCsv((ClickData) object) + "\n");
 		}
 
-		createTrainFile(sb.toString(), "libsvm");
+		createTrainFile(sb.toString(), Calendar.getInstance().getTimeInMillis()+"");
 	}
 
 	@Override
