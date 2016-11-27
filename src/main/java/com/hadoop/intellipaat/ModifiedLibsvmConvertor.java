@@ -33,8 +33,9 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private static final String[] dummyColumns = { "platform", "pageType", "adType" };
 
-	private static final String[] ignoreColumnsColumns = { "keyUserDeviceId", "itemPogId", "accId", "dpDay", "dpHour", "osVersion", "browserDetails",
-			"guid", "widgetId", "trackerId", "adSpaceType", "displayName", "sellerRatingNonSdPlus" };
+	private static final String[] ignoreColumnsColumns = {"eventKey","adSpaceId", "amountSpent","searchKeyword","originalPrice", "supcCreatedTime", "keyUserDeviceId", "pogId", "accId", "dpDay",
+			"dpHour", "osVersion", "browserDetails", "guid", "widgetId", "trackerId", "adSpaceType", "displayName", "sellerRatingNonSdPlus",
+			"email" };
 
 	public static MappingStrategy<ClickData> setColumMapping() {
 		ColumnPositionMappingStrategy<ClickData> strategy = new ColumnPositionMappingStrategy<ClickData>();
@@ -87,6 +88,10 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 				fields[i].setAccessible(true);
 				if (fields[i].getType().equals(String.class)) {
 
+					if ("price".equalsIgnoreCase(fields[i].getName())) {
+						fields[i].setAccessible(true);
+						fields[i].setFloat(clickData, (fields[i].getFloat(clickData) / 500) + 1);
+					}
 					if ("platform".equalsIgnoreCase(fields[i].getName())) {
 						addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb);
 						index++;
