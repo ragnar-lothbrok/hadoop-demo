@@ -69,7 +69,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			for (int i = 0; i < value.length; i++) {
 				stringBuilder.append(index + COLON + value[i]);
 				stringBuilder.append(SPACE);
-				index = index + i;
+				index++;
 			}
 		}
 		return index;
