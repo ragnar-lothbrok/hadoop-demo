@@ -93,14 +93,11 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 						fields[i].setFloat(clickData, (fields[i].getFloat(clickData) / 500) + 1);
 					}
 					if ("platform".equalsIgnoreCase(fields[i].getName())) {
-						addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb);
-						index++;
+						index = addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb);
 					} else if ("pageType".equalsIgnoreCase(fields[i].getName())) {
-						addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb);
-						index++;
+						index = addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb);
 					} else if ("adType".equalsIgnoreCase(fields[i].getName())) {
-						addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb);
-						index++;
+						index = addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb);
 					} else {
 						boolean isIgnored = false;
 						for (int k = 0; k < ignoreColumnsColumns.length; k++) {
