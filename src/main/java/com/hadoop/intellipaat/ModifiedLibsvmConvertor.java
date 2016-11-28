@@ -199,8 +199,8 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			}
 		}
 		System.out.println("Total actual records " + (clickCount + nonClickCount));
-		createTrainFile(outputDir, clickLibsvm.toString(), "-1-" + Calendar.getInstance().getTimeInMillis() + "-" + clickCount);
-		createTrainFile(outputDir, nonClickLibsvm.toString(),"-0-" +Calendar.getInstance().getTimeInMillis() + "-" + nonClickCount);
+		createTrainFile(outputDir, clickLibsvm.toString(), "1-" + Calendar.getInstance().getTimeInMillis() + "-" + clickCount);
+		createTrainFile(outputDir, nonClickLibsvm.toString(),"0-" +Calendar.getInstance().getTimeInMillis() + "-" + nonClickCount);
 	}
 
 	@Override
