@@ -83,7 +83,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		try {
 			sb.append((isEmpty(clickData.getClicked()) ? 0 : 1) + "\t");
 			Field[] fields = clickData.getClass().getDeclaredFields();
-			int index = 0;
+			int index = 1;
 			for (int i = 0; i < fields.length - 1; i++) {
 				fields[i].setAccessible(true);
 				if (fields[i].getType().equals(String.class)) {
