@@ -64,11 +64,12 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		return str == null || str.length() == 0 || "null".equalsIgnoreCase(str);
 	}
 
-	private int addByteArr(byte[] value, Integer index, StringBuilder stringBuilder) {
+	private int addByteArr(byte[] value, Integer index, StringBuilder stringBuilder, String fieldName) {
 		if (value != null) {
 			for (int i = 0; i < value.length; i++) {
 				stringBuilder.append(index + COLON + value[i]);
 				stringBuilder.append(SPACE);
+				featureMap.put(index, fieldName);
 				index++;
 			}
 		}
@@ -77,6 +78,8 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private static final String COLON = ":";
 	private static final String SEPERATOR = " ";
+	
+	static Map<Integer,String> featureMap = new HashMap<Integer,String>();
 
 	private String toCsv(ClickData clickData) throws IllegalArgumentException, IllegalAccessException {
 		StringBuilder sb = new StringBuilder();
@@ -86,37 +89,51 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			int index = 1;
 			for (int i = 0; i < fields.length - 1; i++) {
 				fields[i].setAccessible(true);
+				if ("price".equalsIgnoreCase(fields[i].getName())) {
+					fields[i].setAccessible(true);
+					fields[i].setFloat(clickData, ((Float)(fields[i].getFloat(clickData)/ 500)).intValue() + 1);
+				}
 				if (fields[i].getType().equals(String.class)) {
-
-					if ("price".equalsIgnoreCase(fields[i].getName())) {
-						fields[i].setAccessible(true);
-						fields[i].setFloat(clickData, (fields[i].getFloat(clickData) / 500) + 1);
-					}
 					if ("platform".equalsIgnoreCase(fields[i].getName())) {
-						index = addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb);
+						index = addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName());
 					} else if ("pageType".equalsIgnoreCase(fields[i].getName())) {
-						index = addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb);
+						index = addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName());
 					} else if ("adType".equalsIgnoreCase(fields[i].getName())) {
-						index = addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb);
+						index = addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName());
 					} else {
 						boolean isIgnored = false;
 						for (int k = 0; k < ignoreColumnsColumns.length; k++) {
 							if (ignoreColumnsColumns[k].equalsIgnoreCase(fields[i].getName())) {
 								isIgnored = true;
+								featureMap.put(index, fields[i].getName());
 								index++;
 								break;
 							}
 						}
 						if (!isIgnored) {
 							addHashCode(fields[i].get(clickData).toString(), index, sb);
+							featureMap.put(index, fields[i].getName());
 							index++;
 						}
 					}
 				} else if (fields[i].getType().equals(Boolean.class)) {
 					sb.append((index++) + COLON + getValue(Boolean.parseBoolean(fields[i].get(clickData).toString())) + SEPERATOR);
+					featureMap.put(index, fields[i].getName());
 				} else {
-					addFloat(fields[i].getFloat(clickData), index, sb);
-					index++;
+					boolean isIgnored = false;
+					for (int k = 0; k < ignoreColumnsColumns.length; k++) {
+						if (ignoreColumnsColumns[k].equalsIgnoreCase(fields[i].getName())) {
+							isIgnored = true;
+							featureMap.put(index, fields[i].getName());
+							index++;
+							break;
+						}
+					}
+					if (!isIgnored) {
+						addFloat(fields[i].getFloat(clickData), index, sb);
+						featureMap.put(index, fields[i].getName());
+						index++;
+					}
 				}
 			}
 		} catch (Exception exception) {
@@ -151,6 +168,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 				new ModifiedLibsvmConvertor().formatData(listOfFiles[i].getAbsolutePath(), args[1]);
 			}
 		}
+		System.out.println(featureMap);
 	}
 
 	private void formatData(String path, String outputDir) throws Exception {
