@@ -37,7 +37,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private static final String[] ignoreColumnsColumns = { "eventKey", "adSpaceId", "amountSpent", "searchKeyword", "originalPrice",
 			"supcCreatedTime", "keyUserDeviceId", "pogId", "accId", "dpDay", "dpHour", "osVersion", "browserDetails", "guid", "widgetId", "trackerId",
-			"adSpaceType", "displayName", "sellerRatingNonSdPlus", "email","adType" };
+			"adSpaceType", "displayName", "sellerRatingNonSdPlus", "email","adType","platformType" };
 
 	public static MappingStrategy<ClickData> setColumMapping() {
 		ColumnPositionMappingStrategy<ClickData> strategy = new ColumnPositionMappingStrategy<ClickData>();
