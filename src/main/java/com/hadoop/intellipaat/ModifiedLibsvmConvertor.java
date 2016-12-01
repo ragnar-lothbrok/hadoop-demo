@@ -7,11 +7,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -31,11 +33,11 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private static final String[] mixColumns = { "pincode" };
 
-	private static final String[] dummyColumns = { "platform", "pageType", "adType" };
+	private static final String[] dummyColumns = { "platform", "pageType"};
 
-	private static final String[] ignoreColumnsColumns = {"eventKey","adSpaceId", "amountSpent","searchKeyword","originalPrice", "supcCreatedTime", "keyUserDeviceId", "pogId", "accId", "dpDay",
-			"dpHour", "osVersion", "browserDetails", "guid", "widgetId", "trackerId", "adSpaceType", "displayName", "sellerRatingNonSdPlus",
-			"email" };
+	private static final String[] ignoreColumnsColumns = { "eventKey", "adSpaceId", "amountSpent", "searchKeyword", "originalPrice",
+			"supcCreatedTime", "keyUserDeviceId", "pogId", "accId", "dpDay", "dpHour", "osVersion", "browserDetails", "guid", "widgetId", "trackerId",
+			"adSpaceType", "displayName", "sellerRatingNonSdPlus", "email","adType" };
 
 	public static MappingStrategy<ClickData> setColumMapping() {
 		ColumnPositionMappingStrategy<ClickData> strategy = new ColumnPositionMappingStrategy<ClickData>();
@@ -64,12 +66,26 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		return str == null || str.length() == 0 || "null".equalsIgnoreCase(str);
 	}
 
-	private int addByteArr(byte[] value, Integer index, StringBuilder stringBuilder, String fieldName) {
+	static List<String> parameters = new ArrayList<String>();
+
+	static {
+		parameters.add("slp");
+		parameters.add("clp");
+		parameters.add("pdp");
+		parameters.add("101");
+		parameters.add("102");
+		parameters.add("103");
+		parameters.add("104");
+		parameters.add("105");
+	}
+
+	private int addByteArr(byte[] value, Integer index, StringBuilder stringBuilder, String fieldName, String Value) {
 		if (value != null) {
 			for (int i = 0; i < value.length; i++) {
-				stringBuilder.append(index + COLON + value[i]);
-				stringBuilder.append(SPACE);
-				featureMap.put(index, fieldName);
+				if (Value != null && parameters.contains(Value.trim().toLowerCase())) {
+					stringBuilder.append(index + COLON + value[i]);
+					stringBuilder.append(SPACE);
+				}
 				index++;
 			}
 		}
@@ -78,8 +94,8 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private static final String COLON = ":";
 	private static final String SEPERATOR = " ";
-	
-	static Map<Integer,String> featureMap = new HashMap<Integer,String>();
+
+	static Map<String, String> featureMap = new TreeMap<String, String>();
 
 	private String toCsv(ClickData clickData) throws IllegalArgumentException, IllegalAccessException {
 		StringBuilder sb = new StringBuilder();
@@ -91,48 +107,73 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 				fields[i].setAccessible(true);
 				if ("price".equalsIgnoreCase(fields[i].getName())) {
 					fields[i].setAccessible(true);
-					fields[i].setFloat(clickData, ((Float)(fields[i].getFloat(clickData)/ 500)).intValue() + 1);
+					fields[i].setFloat(clickData, ((Float) (fields[i].getFloat(clickData) / 500)).intValue() + 1);
 				}
 				if (fields[i].getType().equals(String.class)) {
 					if ("platform".equalsIgnoreCase(fields[i].getName())) {
-						index = addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName());
+						int temp = index, k = 0;
+						index = addByteArr(convertSiteIdToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName(),
+								fields[i].get(clickData).toString());
+						while (temp < index) {
+							featureMap.put("f" + temp, platformTypes[k++]);
+							temp++;
+						}
 					} else if ("pageType".equalsIgnoreCase(fields[i].getName())) {
-						index = addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName());
+						int temp = index, k = 0;
+						index = addByteArr(convertPageTypeToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName(),
+								fields[i].get(clickData).toString());
+						while (temp < index) {
+							featureMap.put("f" + temp, pageTypes[k++]);
+							temp++;
+						}
 					} else if ("adType".equalsIgnoreCase(fields[i].getName())) {
-						index = addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName());
+						int temp = index, k = 0;
+						index = addByteArr(convertAdTypeToBytes(fields[i].get(clickData).toString()), index, sb, fields[i].getName(),
+								fields[i].get(clickData).toString());
+						while (temp < index) {
+							featureMap.put("f" + temp, adTypes[k++]);
+							temp++;
+						}
 					} else {
 						boolean isIgnored = false;
 						for (int k = 0; k < ignoreColumnsColumns.length; k++) {
 							if (ignoreColumnsColumns[k].equalsIgnoreCase(fields[i].getName())) {
 								isIgnored = true;
-								featureMap.put(index, fields[i].getName());
+								featureMap.put("f" + index, fields[i].getName());
 								index++;
 								break;
 							}
 						}
 						if (!isIgnored) {
 							addHashCode(fields[i].get(clickData).toString(), index, sb);
-							featureMap.put(index, fields[i].getName());
+							featureMap.put("f" + index, fields[i].getName());
 							index++;
 						}
 					}
 				} else if (fields[i].getType().equals(Boolean.class)) {
 					sb.append((index++) + COLON + getValue(Boolean.parseBoolean(fields[i].get(clickData).toString())) + SEPERATOR);
-					featureMap.put(index, fields[i].getName());
+					featureMap.put("f" + index, fields[i].getName());
 				} else {
 					boolean isIgnored = false;
 					for (int k = 0; k < ignoreColumnsColumns.length; k++) {
 						if (ignoreColumnsColumns[k].equalsIgnoreCase(fields[i].getName())) {
 							isIgnored = true;
-							featureMap.put(index, fields[i].getName());
+							featureMap.put("f" + index, fields[i].getName());
 							index++;
 							break;
 						}
 					}
 					if (!isIgnored) {
 						addFloat(fields[i].getFloat(clickData), index, sb);
-						featureMap.put(index, fields[i].getName());
+						featureMap.put("f" + index, fields[i].getName());
 						index++;
+					}
+				}
+				for(String column : dummyColumns){
+					if(fields[i].getName().equalsIgnoreCase(column)){
+						if (fields[i].get(clickData).toString() == null || !parameters.contains(fields[i].get(clickData).toString().trim().toLowerCase())) {
+							return null;
+						}
 					}
 				}
 			}
@@ -215,7 +256,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 		}
 		System.out.println("Total actual records " + (clickCount + nonClickCount));
 		createTrainFile(outputDir, clickLibsvm.toString(), "1-" + Calendar.getInstance().getTimeInMillis() + "-" + clickCount);
-		createTrainFile(outputDir, nonClickLibsvm.toString(),"0-" +Calendar.getInstance().getTimeInMillis() + "-" + nonClickCount);
+		createTrainFile(outputDir, nonClickLibsvm.toString(), "0-" + Calendar.getInstance().getTimeInMillis() + "-" + nonClickCount);
 	}
 
 	@Override

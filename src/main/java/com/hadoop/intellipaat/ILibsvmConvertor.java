@@ -14,16 +14,22 @@ public interface ILibsvmConvertor {
 	public static final byte[] SLP = { 1, 0, 0 };
 	public static final byte[] CLP = { 0, 1, 0 };
 	public static final byte[] PDP = { 0, 0, 1 };
+	
+	public static String pageTypes[] = {"SLP","CLP","PDP","UNKNOWN"};
 
 	public static final byte[] WEB = { 1, 0, 0 };
 	public static final byte[] WAP = { 0, 1, 0 };
 	public static final byte[] APP = { 0, 0, 1 };
 	public static final byte[] GENERIC = { 0, 0, 0 };
+	
+	public static String platformTypes[] = {"WEB","WAP","APP","GENERIC"};
 
 	public static final byte[] SIMILAR_AD = { 1, 0, 0 };
 	public static final byte[] SEARCH_AD = { 0, 1, 0 };
 	public static final byte[] RETARGATED_AD = { 0, 0, 1 };
 	public static final byte[] OTHER = { 0, 0, 0 };
+	
+	public static String adTypes[] = {"SIMILAR_AD","SEARCH_AD","RETARGATED_AD","OTHER"};
 
 	default int[] convertToDay_Month_Year(String timeStamp) {
 		Calendar cal = Calendar.getInstance();
