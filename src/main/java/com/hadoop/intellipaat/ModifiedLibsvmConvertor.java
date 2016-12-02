@@ -31,13 +31,11 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 			"rating", "ratingCount", "sellerCode", "dpDay", "dpHour", "osVersion", "platformType", "browserDetails", "email", "pincode", "guid",
 			"widgetId", "clicked" };
 
-	private static final String[] mixColumns = { "pincode" };
-
 	private static final String[] dummyColumns = { "platform", "pageType"};
 
 	private static final String[] ignoreColumnsColumns = { "eventKey", "adSpaceId", "amountSpent", "searchKeyword", "originalPrice",
 			"supcCreatedTime", "keyUserDeviceId", "pogId", "accId", "dpDay", "dpHour", "osVersion", "browserDetails", "guid", "widgetId", "trackerId",
-			"adSpaceType", "displayName", "sellerRatingNonSdPlus", "email","adType","platformType" };
+			"adSpaceType", "displayName", "sellerRatingNonSdPlus", "email","adType","platformType","pincode","itemPogId" };
 
 	public static MappingStrategy<ClickData> setColumMapping() {
 		ColumnPositionMappingStrategy<ClickData> strategy = new ColumnPositionMappingStrategy<ClickData>();
