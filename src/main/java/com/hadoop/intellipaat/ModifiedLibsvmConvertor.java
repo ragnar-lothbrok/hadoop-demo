@@ -33,7 +33,7 @@ public class ModifiedLibsvmConvertor implements ILibsvmConvertor {
 
 	private static final String[] dummyColumns = { "platform", "pageType"};
 
-	private static final String[] ignoreColumnsColumns = { "eventKey", "adSpaceId", "amountSpent", "searchKeyword", "originalPrice",
+	private static final String[] ignoreColumnsColumns = {"activeProductCategory","searchKeyword", "searchRelevancyScore","eventKey", "adSpaceId", "amountSpent", "searchKeyword", "originalPrice",
 			"supcCreatedTime", "keyUserDeviceId", "pogId", "accId", "dpDay", "dpHour", "osVersion", "browserDetails", "guid", "widgetId", "trackerId",
 			"adSpaceType", "displayName", "sellerRatingNonSdPlus", "email","adType","platformType","pincode","itemPogId" };
 
